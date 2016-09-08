@@ -1,1 +1,7 @@
-branch: interm_dev
+branch: dev_leds
+
+LED functionality is developed on this branch.
+Merged onto interm_dev after testing.
+LEDs on launch pad are configured and tested.
+Clock configuration is also configured on this branch.
+Hardware Abstraction Layer is created and used to drive simple LEDs.
