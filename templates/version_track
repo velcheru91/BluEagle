@@ -1,0 +1,5 @@
+branch: interm_dev
+
+All the required development, merging and releases are done on this intermediate development branch. 
+Other branches, master and base_versions are backup branches.
+After every significant release, both master and/or base_version are updated.
