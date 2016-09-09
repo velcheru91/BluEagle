@@ -30,13 +30,6 @@
 // Subroutines
 //-----------------------------------------------------------------------------
 
-
-
-
-
-
-
-
 int main(void) {
 	hal_Init_Hardware();
 	hal_Application_Start();
