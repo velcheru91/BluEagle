@@ -210,20 +210,64 @@
 //    sendGraphicsLcdCommand(0xAF); // display on
 //}
 
+//// Blocking function that returns only when SW1 is pressed
+//void hal_SW1_press_wait(void)
+//{
+//	while(HAL_LPAD_SW1_STATUS);
+//}
+//
+//// Blocking function that returns only when SW1 is released
+//void hal_SW1_release_wait(void)
+//{
+//	while(!HAL_LPAD_SW1_STATUS);
+//}
+//
+//// Blocking function that returns only when SW2 is pressed
+//void hal_SW2_press_wait(void)
+//{
+//	while(!HAL_LPAD_SW2_STATUS);
+//}
+//
+//// Blocking function that returns only when SW2 is released
+//void hal_SW2_release_wait(void)
+//{
+//	while(HAL_LPAD_SW2_STATUS);
+//}
+//
+//// Blocking function that returns only when SW3 is pressed
+//void hal_SW3_press_wait(void)
+//{
+//	while(HAL_BPAC_SW1_STATUS);
+//}
+//
+//// Blocking function that returns only when SW3 is released
+//void hal_SW3_release_wait(void)
+//{
+//	while(!HAL_BPAC_SW1_STATUS);
+//}
+//
+//// Blocking function that returns only when SW4 is pressed
+//void hal_SW4_press_wait(void)
+//{
+//	while(HAL_BPAC_SW2_STATUS);
+//}
+//
+//// Blocking function that returns only when SW4 is released
+//void hal_SW4_release_wait(void)
+//{
+//	while(!HAL_BPAC_SW2_STATUS);
+//}
+
 // Initialize Hardware
 //void hal_Init_Hardware(void)
 //{
 //
 //
-//// Enable GPIO peripherals ports
-//    SYSCTL_RCGC2_R = SYSCTL_RCGC2_GPIOA | SYSCTL_RCGC2_GPIOB |
-//    		         SYSCTL_RCGC2_GPIOC | SYSCTL_RCGC2_GPIOD |
-//					 SYSCTL_RCGC2_GPIOE | SYSCTL_RCGC2_GPIOF;
+//
 //// Enable system clock to UART0
 //    SYSCTL_RCGCUART_R |= SYSCTL_RCGCUART_R0
-//    		            |SYSCTL_RCGCUART_R1;
-//// Enable system clock to PWM modules
-//    SYSCTL_RCGCPWM_R |= SYSCTL_RCGCPWM_R0 | SYSCTL_RCGCPWM_R1;
+//    		            | SYSCTL_RCGCUART_R1;
+//
 //// Enable system clock to ADC modules
 //    SYSCTL_RCGCADC_R |= SYSCTL_RCGCADC_R0;
 //// Enable system clock to SSI module
@@ -255,20 +299,7 @@
 //// Port Control selection for UART and SPI pins
 //    GPIO_PORTB_PCTL_R = (GPIO_PCTL_PB7_SSI2TX | GPIO_PCTL_PB4_SSI2CLK | GPIO_PCTL_PB1_U1TX | GPIO_PCTL_PB0_U1RX);
 ////-------------------------------- PORT C-------------------------------------
-//// Configure LED pin
-//    GPIO_PORTC_DIR_R |= HAL_GPIO_BIT4;
-//// make bit 1 an outputs
-//    GPIO_PORTC_DR2R_R |= HAL_GPIO_BIT4;
-//// selecting alternate function on PC4d to be PWM
-//    GPIO_PORTC_AFSEL_R |= HAL_GPIO_BIT4;
-//// selecting analog mode on PC4
-//    GPIO_PORTC_AMSEL_R |= HAL_GPIO_BIT4;
-//// configure PC4 to be PWM output pin
-//    GPIO_PORTC_PCTL_R |= GPIO_PCTL_PC4_M0PWM6;
-//// enable LED
-//    GPIO_PORTC_DEN_R |= HAL_GPIO_BIT4;
-//// resetting the port
-//    GPIO_PORTC_DATA_R = HAL_PORT_RESET;
+//
 ////-------------------------------- PORT D-------------------------------------
 //// Set the direction for Booster pack switches and ADC Input pins
 //    GPIO_PORTD_DIR_R = HAL_PORT_RESET;
@@ -348,36 +379,8 @@
 //    NVIC_EN0_R = 1<<6;
 ////-------------------------------- I2C----------------------------------------
 ////-------------------------------- PWM----------------------------------------
-//// disabling PWM module before configuration as buzzer on BPAC
-//    PWM1_3_CTL_R &= ~PWM_3_CTL_ENABLE;
-//// configuring pulse generator A
-//    PWM1_3_GENA_R |= PWM_3_GENA_ACTZERO_NONE | PWM_3_GENA_ACTLOAD_ONE |
-//                     PWM_3_GENA_ACTCMPAU_NONE | PWM_3_GENA_ACTCMPAD_ZERO |
-//                     PWM_3_GENA_ACTCMPBU_NONE | PWM_3_GENA_ACTCMPBD_NONE;
-//// writing the load value
-//    PWM1_3_LOAD_R = HAL_PWM_BUZZ_LOAD;
-//// loading the comparator value
-//    PWM1_3_CMPA_R = HAL_PWM_BUZZ_CMP;
-//// enabling the PWM generator
-//    PWM1_3_CTL_R = PWM_3_CTL_DEBUG;
-//// enabling the PWM module
-//    PWM1_3_CTL_R |= PWM_3_CTL_ENABLE;
+
 //    //PWM1_ENABLE_R |= PWM_ENABLE_PWM6EN;
-//
-//// disabling PWM module before configuration as BLUE LED on BPAC
-//    PWM0_3_CTL_R &= ~PWM_3_CTL_ENABLE;
-//// configuring pulse generator A
-//    PWM0_3_GENA_R |= PWM_3_GENA_ACTZERO_NONE | PWM_3_GENA_ACTLOAD_ONE |
-//                     PWM_3_GENA_ACTCMPAU_NONE | PWM_3_GENA_ACTCMPAD_ZERO |
-//                     PWM_3_GENA_ACTCMPBU_NONE | PWM_3_GENA_ACTCMPBD_NONE;
-//// writing the load value
-//    PWM0_3_LOAD_R = HAL_PWM_BUZZ_LOAD;
-//// loading the comparator value
-//    PWM0_3_CMPA_R = HAL_PWM_BUZZ_CMP;
-//// enabling the PWM generator
-//    PWM0_3_CTL_R = PWM_3_CTL_DEBUG;
-//// enabling the PWM module
-//	PWM0_3_CTL_R |= PWM_3_CTL_ENABLE;
 //    //PWM0_ENABLE_R |= PWM_ENABLE_PWM6EN;
 ////-------------------------------- SPI ---------------------------------------
 //// Configure the SSI2 as a SPI master, mode 3, 8bit operation, 1 MHz bit rate
