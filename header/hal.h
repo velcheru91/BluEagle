@@ -53,7 +53,7 @@ typedef uint8_t BPACK_data_t;
 #define HAL_LPAD_SW2_STATUS (GPIO_PORTF_DATA_R & 0x01)
 #define HAL_BPAC_SW1_STATUS ((GPIO_PORTD_DATA_R & 0x40)>>6)
 #define HAL_BPAC_SW2_STATUS ((GPIO_PORTD_DATA_R & 0x80)>>7)
-#define HAL_BPAC_SWJ_STATUS ((GPIO_PORTE_DATA_R & 0x10)>>4)
+#define HAL_BPAC_SWJ_STATUS (*((volatile uint32_t *)0x40024040))  /* PE4 */
 //-----------------------------------------------------------------------------
 // LEDs
 //-----------------------------------------------------------------------------
@@ -92,12 +92,14 @@ void HAL_Button1_Init(void);
 void HAL_Button2_Init(void);
 void HAL_Accelero_Init(void);
 void HAL_RGB_BPACK_Init(void);
-void HAL_Buzzer_Init();
-void HAL_LCD_Init();
+void HAL_Buzzer_Init(void);
+void HAL_LCD_Init(void);
 void HAL_Microphone_Init();
 void HAL_Joystick_Init(void);
 void HAL_RGB_LPAD_Init(void);
 void HAL_ButtonLPAD_Init(void);
+void HAL_BT_UART_Init(void);
+void HAL_LPAD_UART_Init(void);
 
 bool HAL_Button1_Input(void);
 bool HAL_Button2_Input(void);
@@ -105,10 +107,11 @@ void HAL_Accelero_Input(void);
 void HAL_RGB_BPACK_Set(uint8_t, uint8_t, uint8_t);
 void HAL_Buzzer_Set(uint8_t buzz);
 void HAL_Microphone_Input(void);
-void HAL_Joystick_Input(void);
+void HAL_Joystick_Input(uint16_t*, uint16_t*, uint32_t*);
 void HAL_RGB_LPAD_Set(uint8_t, uint8_t, uint8_t);
 void HAL_Application_Start();
-int16_t hal_ADC0_readSs3();
+void HAL_LPAD_UART_Write(uint8_t);
+//int16_t hal_ADC0_readSs3();
 void HAL_Init(void);
 
 #endif /* PUBLIC_HAL_INIT_H_ */
