@@ -7,11 +7,18 @@
 //-----------------------------------------------------------------------------
 // Hardware Abstraction Layer Initialization
 //-----------------------------------------------------------------------------
-#ifndef PUBLIC_HAL_INIT_H_
-#define PUBLIC_HAL_INIT_H_
+#ifndef PUBLIC_HAL_H_
+#define PUBLIC_HAL_H_
 //-----------------------------------------------------------------------------
 // Device includes, defines, and assembler directives
 //-----------------------------------------------------------------------------
+typedef uint8_t BPACK_data_t;
+
+#define DELAY_1uSEC		1
+#define DELAY_1mSEC		1000
+#define DELAY_1SEC		1000000
+#define DELAY_10SEC		10000000
+
 #define HAL_LED_ON     1
 #define HAL_LED_OFF	   0
 #define HAL_LED_TOGGLE 1
@@ -78,15 +85,36 @@
 //-----------------------------------------------------------------------------
 // Device prototype, function and method decleration
 //-----------------------------------------------------------------------------
-void hal_Init_Hardware(void);
-void hal_Application_Start(void);
-void hal_SW1_press_wait(void);
-void hal_SW1_release_wait(void);
-void hal_SW2_press_wait(void);
-void hal_SW2_release_wait(void);
-void hal_SW3_press_wait(void);
-void hal_SW3_release_wait(void);
-void hal_SW4_press_wait(void);
-void hal_SW4_release_wait(void);
+void HAL_Reset_ISR(void);
+void HAL_Sys_Delay(uint32_t us);
+void HAL_Sys_Clk_Init(void);
+void HAL_Button1_Init(void);
+void HAL_Button2_Init(void);
+void HAL_Accelero_Init(void);
+void HAL_RGB_BPACK_Init(void);
+void HAL_Buzzer_Init();
+void HAL_LCD_Init();
+void HAL_Microphone_Init();
+void HAL_Joystick_Init(void);
+void HAL_RGB_LPAD_Init(void);
+void HAL_ButtonLPAD_Init(void);
+
+bool HAL_Button1_Input(void);
+bool HAL_Button2_Input(void);
+void HAL_RGB_LPAD_Set(uint8_t);
+void HAL_Application_Start();
 int16_t hal_ADC0_readSs3();
+void HAL_Init(void);
+
+//void hal_Init_Hardware(void);
+//void hal_Application_Start(void);
+//void hal_SW1_press_wait(void);
+//void hal_SW1_release_wait(void);
+//void hal_SW2_press_wait(void);
+//void hal_SW2_release_wait(void);
+//void hal_SW3_press_wait(void);
+//void hal_SW3_release_wait(void);
+//void hal_SW4_press_wait(void);
+//void hal_SW4_release_wait(void);
+//int16_t hal_ADC0_readSs3();
 #endif /* PUBLIC_HAL_INIT_H_ */

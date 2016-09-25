@@ -1,7 +1,6 @@
 /*
  * File name: main.c
  *
- *
  *  Created by					Created on
  *  Venugopal Velcheru			Sep 7, 2016
  */
@@ -19,9 +18,18 @@
 //-----------------------------------------------------------------------------
 // Device includes, defines, and assembler directives
 //-----------------------------------------------------------------------------
-#include "stdint.h"
-#include "tm4c123gh6pm.h"
-#include "hal_init.h"
+#ifndef _STDINT_H_
+#include <stdint.h>
+#endif
+#ifndef __TM4C123GH6PM_H__
+#include <tm4c123gh6pm.h>
+#endif
+#ifndef _STDBOOL
+#include <stdbool.h>
+#endif
+#ifndef PUBLIC_HAL_H_
+#include <hal.h>
+#endif
 //-----------------------------------------------------------------------------
 // Declarations
 //-----------------------------------------------------------------------------
@@ -30,9 +38,11 @@
 // Subroutines
 //-----------------------------------------------------------------------------
 
-int main(void) {
-	hal_Init_Hardware();
-	hal_Application_Start();
+int main(void)
+{
+	HAL_Init();
+//	hal_Init_Hardware();
+	HAL_Application_Start();
 	return 0;
 }
 //-----------------------------------------------------------------------------

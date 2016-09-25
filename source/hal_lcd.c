@@ -11,9 +11,9 @@
 #include <stdint.h>
 #include <stdbool.h>
 #include "tm4c123gh6pm.h"
-#include "sys_time.h"
-#include "hal_init.h"
-#include "sys_interrupts.h"
+//#include "sys_time.h"
+#include "hal.h"
+//#include "sys_interrupts.h"
 #include "hal_lcd.h"
 //-----------------------------------------------------------------------------
 // Subroutines
@@ -24,7 +24,6 @@ void hal_spiWrite(uint8_t data)
 	SSI2_DR_R = data;			// write command
 	while (SSI2_SR_R & SSI_SR_BSY);
 }
-
 
 void hal_LCD_csOn()
 {
