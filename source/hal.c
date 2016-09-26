@@ -26,6 +26,9 @@
 #ifndef PUBLIC_HAL_H_
 #include <hal.h>
 #endif
+#ifndef PUBLIC_HAL_LCD_H_
+#include <hal_lcd.h>
+#endif
 //-----------------------------------------------------------------------------
 // Subroutines
 //-----------------------------------------------------------------------------
@@ -175,11 +178,6 @@ void HAL_Buzzer_Init(void)
 	PWM1_3_CTL_R = PWM_3_CTL_DEBUG;
 	// enabling the PWM module
 	PWM1_3_CTL_R |= PWM_3_CTL_ENABLE;
-}
-
-void HAL_LCD_Init()
-{
-
 }
 
 void static adcinit(void)
@@ -410,14 +408,17 @@ void HAL_LPAD_UART_Read(uint8_t* data)
 void HAL_Init(void)
 {
 	HAL_Sys_Clk_Init();
-	HAL_RGB_LPAD_Init();HAL_RGB_LPAD_Set(1,0,0);
+	HAL_RGB_LPAD_Init();
+//	HAL_RGB_LPAD_Set(1,0,0);
 	HAL_Button1_Init();
 	HAL_Button2_Init();
 	HAL_RGB_BPACK_Init();
 	HAL_Buzzer_Init();
 	HAL_Joystick_Init();
 	HAL_LPAD_UART_Init();
-	HAL_Sys_Delay(.5*DELAY_1SEC);HAL_RGB_LPAD_Set(0,0,0);
+	HAL_LCD_Init();
+	//HAL_Sys_Delay(.5*DELAY_1SEC);
+//	HAL_RGB_LPAD_Set(0,0,0);
 }
 
 void HAL_Application_Start()

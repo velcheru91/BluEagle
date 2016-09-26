@@ -264,14 +264,9 @@
 //
 //
 //
-//// Enable system clock to UART0
-//    SYSCTL_RCGCUART_R |= SYSCTL_RCGCUART_R0
-//    		            | SYSCTL_RCGCUART_R1;
 //
 //// Enable system clock to ADC modules
 //    SYSCTL_RCGCADC_R |= SYSCTL_RCGCADC_R1;
-//// Enable system clock to SSI module
-//    SYSCTL_RCGCSSI_R |= SYSCTL_RCGCSSI_R2;
 ////-------------------------------- PORT A-------------------------------------
 //	// Set the direction for UART0 RX and Tx
 //	    GPIO_PORTA_DIR_R |= HAL_GPIO_BIT4 | HAL_GPIO_BIT1;

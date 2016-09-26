@@ -16,6 +16,7 @@ typedef uint8_t BPACK_data_t;
 
 #define DELAY_1uSEC		1
 #define DELAY_1mSEC		1000
+#define DELAY_500mSEC   500000
 #define DELAY_1SEC		1000000
 #define DELAY_10SEC		10000000
 
@@ -93,7 +94,6 @@ void HAL_Button2_Init(void);
 void HAL_Accelero_Init(void);
 void HAL_RGB_BPACK_Init(void);
 void HAL_Buzzer_Init(void);
-void HAL_LCD_Init(void);
 void HAL_Microphone_Init();
 void HAL_Joystick_Init(void);
 void HAL_RGB_LPAD_Init(void);
