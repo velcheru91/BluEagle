@@ -29,6 +29,7 @@
 #ifndef PUBLIC_HAL_LCD_H_
 #include <hal_lcd.h>
 #endif
+
 //-----------------------------------------------------------------------------
 // Subroutines
 //-----------------------------------------------------------------------------
@@ -355,8 +356,29 @@ void HAL_RGB_BPACK_Set(uint8_t red, uint8_t green, uint8_t blue)
 	(green?(HAL_BPAC_GRN_LED_ON):(HAL_BPAC_GRN_LED_OFF));
 	(blue?(HAL_BPAC_BLU_LED_ON):(HAL_BPAC_BLU_LED_OFF));
 }
-void HAL_Buzzer_Set(uint8_t buzz)
+void HAL_Buzzer_Set(uint8_t buzz, uint8_t tone)
 {
+	switch(tone)
+	{
+	case 0:PWM1_3_CMPA_R = (2500*0.10)-1;
+		break;
+	case 1:PWM1_3_CMPA_R = (2500*0.20)-1;
+		break;
+	case 2:PWM1_3_CMPA_R = (2500*0.30)-1;
+		break;
+	case 3:PWM1_3_CMPA_R = (2500*0.40)-1;
+		break;
+	case 4:PWM1_3_CMPA_R = (2500*0.50)-1;
+		break;
+	case 5:PWM1_3_CMPA_R = (2500*0.60)-1;
+		break;
+	case 6:PWM1_3_CMPA_R = (2500*0.70)-1;
+		break;
+	case 7:PWM1_3_CMPA_R = (2500*0.80)-1;
+		break;
+	default:PWM1_3_CMPA_R = HAL_PWM_BUZZ_CMP;
+		break;
+	}
 	(buzz?(HAL_BPAC_BUZZ_ON):(HAL_BPAC_BUZZ_OFF));
 }
 
@@ -423,13 +445,13 @@ void HAL_Init(void)
 
 void HAL_Application_Start()
 {
-	uint32_t* sel_pt;
-	uint16_t raw_x, raw_y;
+//	uint32_t* sel_pt;
+//	uint16_t raw_x, raw_y;
 //	uint8_t out_x, out_y;
 //	double scale_value_x, scale_value_y;
 	while(1)
 	{
-		HAL_Joystick_Input(&raw_x, &raw_y, sel_pt);
+//		HAL_Joystick_Input(&raw_x, &raw_y, sel_pt);
 //		scale_value_x = ((((double)(raw_x)-1000.0)*256.0)/4096.0);
 //		out_x = (uint8_t)floor(scale_value_x);
 //		scale_value_y = ((((double)(raw_y)-1000.0)*256.0)/4096.0);
@@ -437,26 +459,38 @@ void HAL_Application_Start()
 		//HAL_LPAD_UART_Write(out_x);
 		//HAL_LPAD_UART_Write(out_y);
 		//HAL_LPAD_UART_Write(0x0A);
-		if(HAL_Button1_Input())
-		{
-			HAL_RGB_BPACK_Set(0,1,0);
-			HAL_Buzzer_Set(1);
-		}
-		else if(HAL_Button2_Input())
-		{
-			HAL_RGB_BPACK_Set(0,0,1);
-			HAL_Buzzer_Set(1);
-		}
-		else if(!(((*sel_pt) & HAL_GPIO_BIT4)>>4))
-		{
-			HAL_RGB_BPACK_Set(0,0,0);
-			HAL_Buzzer_Set(1);
-		}
-		else
-		{
-			HAL_Buzzer_Set(0);
-		}
-		HAL_Sys_Delay(DELAY_1mSEC*50);
+//		if(HAL_Button1_Input())
+//		{
+//			HAL_RGB_BPACK_Set(0,1,0);
+//			HAL_Buzzer_Set(1,0);
+//		}
+//		else if(HAL_Button2_Input())
+//		{
+//			HAL_RGB_BPACK_Set(0,0,1);
+//			HAL_Buzzer_Set(1,1);
+//		}
+//		else if(!(((*sel_pt) & HAL_GPIO_BIT4)>>4))
+//		{
+//			HAL_RGB_BPACK_Set(0,0,0);
+//			HAL_Buzzer_Set(1,2);
+//		}
+//		else
+//		{
+//			HAL_Buzzer_Set(0,0);
+//		}
+//		uint8_t i,j;
+//		for (i=0;i<8;i++)
+//		{
+//			HAL_Buzzer_Set(0,0);
+//			HAL_Buzzer_Set(1,i);
+//			HAL_Sys_Delay(DELAY_1mSEC*500);
+//		}
+//		for (j=8;j>0;j--)
+//		{
+//			HAL_Buzzer_Set(0,0);
+//			HAL_Buzzer_Set(1,j-1);
+			HAL_Sys_Delay(DELAY_1mSEC);
+//		}
 	}
 		//raw_input = hal_ADC0_readSs3();
 		//scaled_value = ((((double)raw_input-1000.0)*256.0)/2000.0);

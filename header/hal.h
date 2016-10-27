@@ -105,7 +105,7 @@ bool HAL_Button1_Input(void);
 bool HAL_Button2_Input(void);
 void HAL_Accelero_Input(void);
 void HAL_RGB_BPACK_Set(uint8_t, uint8_t, uint8_t);
-void HAL_Buzzer_Set(uint8_t buzz);
+void HAL_Buzzer_Set(uint8_t, uint8_t);
 void HAL_Microphone_Input(void);
 void HAL_Joystick_Input(uint16_t*, uint16_t*, uint32_t*);
 void HAL_RGB_LPAD_Set(uint8_t, uint8_t, uint8_t);
@@ -113,5 +113,6 @@ void HAL_Application_Start();
 void HAL_LPAD_UART_Write(uint8_t);
 //int16_t hal_ADC0_readSs3();
 void HAL_Init(void);
+
 
 #endif /* PUBLIC_HAL_INIT_H_ */
