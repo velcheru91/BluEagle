@@ -39,7 +39,7 @@ typedef uint8_t BPACK_data_t;
 //-----------------------------------------------------------------------------
 // PWM configuration
 //-----------------------------------------------------------------------------
-#define HAL_PWM_BUZZ_LOAD	2499    // LOAD value = PWMclk/ReqFreq, PWMclk = SYSclk/16
+#define HAL_PWM_BUZZ_LOAD	(40000000/(50*16))   // LOAD value = PWMclk/ReqFreq, PWMclk = SYSclk/16
 #define HAL_PWM_DUTY50 0.5
 #define HAL_PWM_DUTY25 0.75
 #define HAL_PWM_DUTY75 0.25

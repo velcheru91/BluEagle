@@ -172,7 +172,8 @@ void HAL_Buzzer_Init(void)
 	                 PWM_3_GENA_ACTCMPAU_NONE | PWM_3_GENA_ACTCMPAD_ZERO |
 	                 PWM_3_GENA_ACTCMPBU_NONE | PWM_3_GENA_ACTCMPBD_NONE;
 	// writing the load value
-	PWM1_3_LOAD_R = HAL_PWM_BUZZ_LOAD;
+	PWM1_3_LOAD_R = HAL_PWM_BUZZ_LOAD;//0xC34F;//0xC3500;//
+//	PWM1_3_LOAD_R = 0xC3500;//HAL_PWM_BUZZ_LOAD;
 	// loading the comparator value
 	PWM1_3_CMPA_R = HAL_PWM_BUZZ_CMP;
 	// enabling the PWM generator
@@ -360,7 +361,10 @@ void HAL_Buzzer_Set(uint8_t buzz, uint8_t tone)
 {
 	switch(tone)
 	{
-	case 0:PWM1_3_CMPA_R = (2500*0.10)-1;
+	case 0://PWM1_3_CTL_R &= ~PWM_3_CTL_ENABLE;
+		   PWM1_3_CMPA_R = ((HAL_PWM_BUZZ_LOAD-1)*0.925);//0xEA4;//0xB4AA0;
+//		   PWM1_3_CMPA_R = 0xB4AA0;
+//		   PWM1_3_CTL_R |= PWM_3_CTL_ENABLE;
 		break;
 	case 1:PWM1_3_CMPA_R = (2500*0.20)-1;
 		break;
@@ -375,6 +379,16 @@ void HAL_Buzzer_Set(uint8_t buzz, uint8_t tone)
 	case 6:PWM1_3_CMPA_R = (2500*0.70)-1;
 		break;
 	case 7:PWM1_3_CMPA_R = (2500*0.80)-1;
+		break;
+	case 90://PWM1_3_CTL_R &= ~PWM_3_CTL_ENABLE;
+		     PWM1_3_CMPA_R = ((HAL_PWM_BUZZ_LOAD-1)*0.90);//0x1387;
+//			 PWM1_3_CMPA_R = 0xAFCE4;
+//		     PWM1_3_CTL_R |= PWM_3_CTL_ENABLE;
+		break;
+	case 180://PWM1_3_CTL_R &= ~PWM_3_CTL_ENABLE;
+		      PWM1_3_CMPA_R = ((HAL_PWM_BUZZ_LOAD-1)*0.95);//0x9C3;
+//			  PWM1_3_CMPA_R = 0xB985C;
+//		      PWM1_3_CTL_R |= PWM_3_CTL_ENABLE;
 		break;
 	default:PWM1_3_CMPA_R = HAL_PWM_BUZZ_CMP;
 		break;
@@ -435,10 +449,11 @@ void HAL_Init(void)
 	HAL_Button1_Init();
 	HAL_Button2_Init();
 	HAL_RGB_BPACK_Init();
+	HAL_Sys_Delay(DELAY_1SEC);
 	HAL_Buzzer_Init();
 	HAL_Joystick_Init();
 	HAL_LPAD_UART_Init();
-	HAL_LCD_Init();
+	//HAL_LCD_Init();
 	//HAL_Sys_Delay(.5*DELAY_1SEC);
 //	HAL_RGB_LPAD_Set(0,0,0);
 }
@@ -449,6 +464,8 @@ void HAL_Application_Start()
 //	uint16_t raw_x, raw_y;
 //	uint8_t out_x, out_y;
 //	double scale_value_x, scale_value_y;
+	PWM1_3_CMPA_R = ((HAL_PWM_BUZZ_LOAD-1)*0.925);
+	HAL_BPAC_BUZZ_ON;
 	while(1)
 	{
 //		HAL_Joystick_Input(&raw_x, &raw_y, sel_pt);
@@ -489,7 +506,30 @@ void HAL_Application_Start()
 //		{
 //			HAL_Buzzer_Set(0,0);
 //			HAL_Buzzer_Set(1,j-1);
-			HAL_Sys_Delay(DELAY_1mSEC);
+		//if(HAL_Button1_Input())
+		HAL_Sys_Delay(DELAY_1SEC);
+		{
+			PWM1_3_CMPA_R = ((HAL_PWM_BUZZ_LOAD-1)*0.950);
+//			HAL_BPAC_BUZZ_ON
+		}
+		HAL_Sys_Delay(DELAY_1SEC);
+		//else if (HAL_Button2_Input())
+		{
+			PWM1_3_CMPA_R = ((HAL_PWM_BUZZ_LOAD-1)*0.925);
+		}
+		HAL_Sys_Delay(DELAY_1SEC);
+		//else
+		{
+			PWM1_3_CMPA_R = ((HAL_PWM_BUZZ_LOAD-1)*0.900);
+		}
+
+//		HAL_Sys_Delay(DELAY_1SEC);
+//
+//		HAL_Sys_Delay(DELAY_1SEC);
+//
+//		HAL_Sys_Delay(DELAY_1SEC);
+//		HAL_Buzzer_Set(1,0);
+//		HAL_Sys_Delay(DELAY_1SEC);
 //		}
 	}
 		//raw_input = hal_ADC0_readSs3();
