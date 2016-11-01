@@ -464,7 +464,7 @@ void HAL_Application_Start()
 //	uint16_t raw_x, raw_y;
 //	uint8_t out_x, out_y;
 //	double scale_value_x, scale_value_y;
-	PWM1_3_CMPA_R = ((HAL_PWM_BUZZ_LOAD-1)*0.925);
+	PWM1_3_CMPA_R = ((HAL_PWM_BUZZ_LOAD-1)*0.90); // reset to position 0
 	HAL_BPAC_BUZZ_ON;
 	while(1)
 	{
@@ -507,21 +507,31 @@ void HAL_Application_Start()
 //			HAL_Buzzer_Set(0,0);
 //			HAL_Buzzer_Set(1,j-1);
 		//if(HAL_Button1_Input())
-		HAL_Sys_Delay(DELAY_1SEC);
+		for(j=0.85;j<=0.95;j=j+0.01)
 		{
-			PWM1_3_CMPA_R = ((HAL_PWM_BUZZ_LOAD-1)*0.950);
+			PWM1_3_CMPA_R = ((HAL_PWM_BUZZ_LOAD-1)*j);
+			HAL_Sys_Delay(50000);
+		}
+		for(j=0.95;j>=0.85;j=j-0.01)
+		{
+			PWM1_3_CMPA_R = ((HAL_PWM_BUZZ_LOAD-1)*j);
+			HAL_Sys_Delay(50000);
+		}
+// 		HAL_Sys_Delay(DELAY_1SEC);
+// 		{
+// 			PWM1_3_CMPA_R = ((HAL_PWM_BUZZ_LOAD-1)*0.950);
 //			HAL_BPAC_BUZZ_ON
-		}
-		HAL_Sys_Delay(DELAY_1SEC);
+// 		}
+// 		HAL_Sys_Delay(DELAY_1SEC);
 		//else if (HAL_Button2_Input())
-		{
-			PWM1_3_CMPA_R = ((HAL_PWM_BUZZ_LOAD-1)*0.925);
-		}
-		HAL_Sys_Delay(DELAY_1SEC);
+// 		{
+// 			PWM1_3_CMPA_R = ((HAL_PWM_BUZZ_LOAD-1)*0.925);
+// 		}
+// 		HAL_Sys_Delay(DELAY_1SEC);
 		//else
-		{
-			PWM1_3_CMPA_R = ((HAL_PWM_BUZZ_LOAD-1)*0.900);
-		}
+// 		{
+// 			PWM1_3_CMPA_R = ((HAL_PWM_BUZZ_LOAD-1)*0.900);
+// 		}
 
 //		HAL_Sys_Delay(DELAY_1SEC);
 //
