@@ -182,6 +182,74 @@ void HAL_Buzzer_Init(void)
 	PWM1_3_CTL_R |= PWM_3_CTL_ENABLE;
 }
 
+void HAL_Servo1_Init(void)
+{
+    // Enable system clock to PWM modules
+    SYSCTL_RCGCPWM_R |= SYSCTL_RCGCPWM_R1;
+    // Configure pins for Buzzer
+    GPIO_PORTE_DIR_R |= HAL_GPIO_BIT5;
+    // make bit 1 an outputs
+    GPIO_PORTE_DR2R_R |= HAL_GPIO_BIT5;
+    // selecting alternate function on PF2 to be PWM
+    GPIO_PORTE_AFSEL_R |= HAL_GPIO_BIT5;
+    // selecting analog mode on PF2
+    GPIO_PORTE_AMSEL_R |= HAL_GPIO_BIT5;
+    // configure PF2 to be PWM output pin
+    GPIO_PORTE_PCTL_R |= GPIO_PCTL_PE5_M1PWM3;
+    // enable LED
+    GPIO_PORTE_DEN_R |= HAL_GPIO_BIT5;
+    // resetting the port
+    GPIO_PORTE_DATA_R = HAL_PORT_RESET;
+    // disabling PWM module before configuration as buzzer on BPAC
+    PWM1_1_CTL_R &= ~PWM_2_CTL_ENABLE;
+    // configuring pulse generator A
+    PWM1_1_GENA_R |= PWM_2_GENA_ACTZERO_NONE | PWM_2_GENA_ACTLOAD_ONE |
+                     PWM_2_GENA_ACTCMPAU_NONE | PWM_2_GENA_ACTCMPAD_ZERO |
+                     PWM_2_GENA_ACTCMPBU_NONE | PWM_2_GENA_ACTCMPBD_NONE;
+    // writing the load value
+    PWM1_1_LOAD_R = HAL_PWM_BUZZ_LOAD;//0xC34F;//0xC3500;//
+    // loading the comparator value
+    PWM1_1_CMPA_R = HAL_PWM_BUZZ_CMP;
+    // enabling the PWM generator
+    PWM1_1_CTL_R = PWM_1_CTL_DEBUG;
+    // enabling the PWM module
+    PWM1_1_CTL_R |= PWM_1_CTL_ENABLE;
+}
+
+void HAL_Servo2_Init(void)
+{
+    // Enable system clock to PWM modules
+    SYSCTL_RCGCPWM_R |= SYSCTL_RCGCPWM_R0;
+    // Configure pins for Buzzer
+    GPIO_PORTC_DIR_R |= HAL_GPIO_BIT5;
+    // make bit 1 an outputs
+    GPIO_PORTC_DR2R_R |= HAL_GPIO_BIT5;
+    // selecting alternate function on PF2 to be PWM
+    GPIO_PORTC_AFSEL_R |= HAL_GPIO_BIT5;
+    // selecting analog mode on PF2
+    GPIO_PORTC_AMSEL_R |= HAL_GPIO_BIT5;
+    // configure PF2 to be PWM output pin
+    GPIO_PORTC_PCTL_R |= GPIO_PCTL_PC5_M0PWM7;
+    // enable LED
+    GPIO_PORTC_DEN_R |= HAL_GPIO_BIT5;
+    // resetting the port
+    GPIO_PORTC_DATA_R = HAL_PORT_RESET;
+    // disabling PWM module before configuration as buzzer on BPAC
+    PWM0_3_CTL_R &= ~PWM_3_CTL_ENABLE;
+    // configuring pulse generator A
+    PWM0_3_GENA_R |= PWM_2_GENA_ACTZERO_NONE | PWM_2_GENA_ACTLOAD_ONE |
+                     PWM_2_GENA_ACTCMPAU_NONE | PWM_2_GENA_ACTCMPAD_ZERO |
+                     PWM_2_GENA_ACTCMPBU_NONE | PWM_2_GENA_ACTCMPBD_NONE;
+    // writing the load value
+    PWM0_3_LOAD_R = HAL_PWM_BUZZ_LOAD;//0xC34F;//0xC3500;//
+    // loading the comparator value
+    PWM0_3_CMPA_R = HAL_PWM_BUZZ_CMP;
+    // enabling the PWM generator
+    PWM0_3_CTL_R = PWM_0_CTL_DEBUG;
+    // enabling the PWM module
+    PWM0_3_CTL_R |= PWM_0_CTL_ENABLE;
+}
+
 void static adcinit(void)
 {
 	// Enable system clock to ADC modules
@@ -441,18 +509,39 @@ void HAL_LPAD_UART_Read(uint8_t* data)
 //    return ADC0_SSFIFO3_R;                           // get single result from the FIFO
 //}
 
+void HAL_Switch_Init(void)
+{
+    GPIO_PORTF_LOCK_R = GPIO_LOCK_KEY;
+    // enabling the functionality of all pins in PORTD
+    GPIO_PORTF_CR_R = HAL_PORT_ENABLE;
+    // enable LED
+    GPIO_PORTF_DIR_R &= ~(HAL_GPIO_BIT0 | HAL_GPIO_BIT4);
+    // selecting alternate function on PF2 to be PWM
+    GPIO_PORTF_PUR_R |= (HAL_GPIO_BIT0 | HAL_GPIO_BIT4);
+//    GPIO_PORTF_AFSEL_R |= HAL_GPIO_BIT2;
+    GPIO_PORTF_DEN_R |= (HAL_GPIO_BIT0 | HAL_GPIO_BIT4);
+    // selecting analog mode on PF2
+//    GPIO_PORTF_AMSEL_R |= HAL_GPIO_BIT2;
+    // configure PF2 to be PWM output pin
+//    GPIO_PORTF_PCTL_R |= GPIO_PCTL_PF2_M1PWM6;
+
+}
+
 void HAL_Init(void)
 {
 	HAL_Sys_Clk_Init();
-	HAL_RGB_LPAD_Init();
+//	HAL_RGB_LPAD_Init();
 //	HAL_RGB_LPAD_Set(1,0,0);
-	HAL_Button1_Init();
-	HAL_Button2_Init();
+//	HAL_Button1_Init();
+//	HAL_Button2_Init();
+	HAL_Switch_Init();
 	HAL_RGB_BPACK_Init();
-	HAL_Sys_Delay(DELAY_1SEC);
+//	HAL_Sys_Delay(DELAY_1SEC);
 	HAL_Buzzer_Init();
-	HAL_Joystick_Init();
-	HAL_LPAD_UART_Init();
+//	HAL_Servo1_Init();
+//	HAL_Servo2_Init();
+//	HAL_Joystick_Init();
+//	HAL_LPAD_UART_Init();
 	//HAL_LCD_Init();
 	//HAL_Sys_Delay(.5*DELAY_1SEC);
 //	HAL_RGB_LPAD_Set(0,0,0);
@@ -463,11 +552,74 @@ void HAL_Application_Start()
 //	uint32_t* sel_pt;
 //	uint16_t raw_x, raw_y;
 //	uint8_t out_x, out_y;
+    uint8_t dir1=1,dir2=1;
+    uint32_t j=850,k=880, data1=0, data2=0;
 //	double scale_value_x, scale_value_y;
 	PWM1_3_CMPA_R = ((HAL_PWM_BUZZ_LOAD-1)*0.90); // reset to position 0
-	HAL_BPAC_BUZZ_ON;
+	PWM1_ENABLE_R |= PWM_ENABLE_PWM6EN;
+
+//	PWM1_1_CMPA_R = ((HAL_PWM_BUZZ_LOAD-1)*0.90);
+//	PWM1_ENABLE_R |= PWM_ENABLE_PWM3EN;
+
+    PWM0_3_CMPA_R = ((HAL_PWM_BUZZ_LOAD-1)*0.90);
+    PWM0_ENABLE_R |= PWM_ENABLE_PWM6EN;
+
+//    PWM0_3_CMPA_R = ((HAL_PWM_BUZZ_LOAD-1)*0.90);
+//    PWM0_ENABLE_R |= PWM_ENABLE_PWM7EN;
 	while(1)
 	{
+        if ((GPIO_PORTF_DATA_R & 0x01) == 0)
+        {
+            if (dir1 == 1)
+                j++;
+            else
+                j--;
+            if (j>=915)
+                dir1 = 0;
+            if (j<=850)
+                dir1 = 1;
+
+        //for(j=850;j<=915;j=j+1)
+        //{
+            data1 = (((HAL_PWM_BUZZ_LOAD-1)*j)/1000);
+            PWM1_3_CMPA_R = data1;
+//          PWM0_3_CMPA_R = data;
+            HAL_Sys_Delay(20000);
+        //}
+//        for(j=915;j>=850;j=j-1)
+//        {
+//            data1 = (((HAL_PWM_BUZZ_LOAD-1)*j)/1000);
+//            PWM1_3_CMPA_R = data1;
+//          PWM0_3_CMPA_R = data2;
+//            HAL_Sys_Delay(20000);
+//        }
+        }
+
+        if ((GPIO_PORTF_DATA_R & 0x10) == 0)
+        {
+            if (dir2 == 1)
+                k++;
+            else
+                k--;
+            if (k>=940)
+                dir2 = 0;
+            if (k<=880)
+                dir2 = 1;
+//        for(k=940;k>=880;k=k-1)
+//        {
+            data2 = (((HAL_PWM_BUZZ_LOAD-1)*k)/1000);
+//            PWM1_3_CMPA_R = data1;
+            PWM0_3_CMPA_R = data2;
+            HAL_Sys_Delay(20000);
+//        }
+//        for(k=880;k<=940;k=k+1)
+//        {
+//            data2 = (((HAL_PWM_BUZZ_LOAD-1)*k)/1000);
+//            PWM1_3_CMPA_R = data;
+//            PWM0_3_CMPA_R = data2;
+//            HAL_Sys_Delay(20000);
+//        }
+        }
 //		HAL_Joystick_Input(&raw_x, &raw_y, sel_pt);
 //		scale_value_x = ((((double)(raw_x)-1000.0)*256.0)/4096.0);
 //		out_x = (uint8_t)floor(scale_value_x);
@@ -507,16 +659,7 @@ void HAL_Application_Start()
 //			HAL_Buzzer_Set(0,0);
 //			HAL_Buzzer_Set(1,j-1);
 		//if(HAL_Button1_Input())
-		for(j=0.85;j<=0.95;j=j+0.01)
-		{
-			PWM1_3_CMPA_R = ((HAL_PWM_BUZZ_LOAD-1)*j);
-			HAL_Sys_Delay(50000);
-		}
-		for(j=0.95;j>=0.85;j=j-0.01)
-		{
-			PWM1_3_CMPA_R = ((HAL_PWM_BUZZ_LOAD-1)*j);
-			HAL_Sys_Delay(50000);
-		}
+
 // 		HAL_Sys_Delay(DELAY_1SEC);
 // 		{
 // 			PWM1_3_CMPA_R = ((HAL_PWM_BUZZ_LOAD-1)*0.950);
@@ -556,17 +699,17 @@ void HAL_Application_Start()
 
 void _ISR_HAL_UART0_RX_ (void)
 {
-	uint8_t var_bridge;
+/*	uint8_t var_bridge;
 	while (UART0_FR_R & UART_FR_RXFE);
 	var_bridge = UART0_DR_R;
 	while (UART1_FR_R & UART_FR_TXFF);
-	UART1_DR_R = var_bridge;
+	UART1_DR_R = var_bridge;*/
 }
 void _ISR_HAL_UART1_RX_ (void)
 {
-	uint8_t var_bridge;
+/*	uint8_t var_bridge;
 	while (UART1_FR_R & UART_FR_RXFE);
 	var_bridge = UART1_DR_R;
 	while (UART0_FR_R & UART_FR_TXFF);
-	UART0_DR_R = var_bridge;
+	UART0_DR_R = var_bridge;*/
 }

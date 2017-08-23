@@ -40,9 +40,9 @@
 
 int main(void)
 {
-	HAL_Init();
+	HAL_Init();//incipient();
 //	hal_Init_Hardware();
-	HAL_Application_Start();
+	HAL_Application_Start();//reprise();
 	return 0;
 }
 //-----------------------------------------------------------------------------
