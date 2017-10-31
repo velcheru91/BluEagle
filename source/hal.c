@@ -250,22 +250,9 @@ void HAL_Servo2_Init(void)
     PWM0_3_CTL_R |= PWM_0_CTL_ENABLE;
 }
 
-void static adcinit(void)
-{
-	// Enable system clock to ADC modules
-	SYSCTL_RCGCADC_R |= SYSCTL_RCGCADC_R0;
-	// Allow time for clock to stabilize
-	while((SYSCTL_PRADC_R&0x01) == 0){};
-    // GPIO initialization in more specific functions
-	// select PLL as the time base (not needed, since default value)
-	ADC0_CC_R = ADC_CC_CS_SYSPLL;
-	//clear max sample rate field
-	ADC0_PC_R &= ~ADC_SPC_PHASE_M;
-	//configure for 125K samples/sec
-	ADC0_PC_R |= ADC_SPC_PHASE_22_5;
-    // Sequencer 3 is lowest priority
-	ADC0_SSPRI_R = 0x3210;
-}
+//void static adcinit(void)
+//{
+//}
 
 void HAL_Microphone_Init()
 {
@@ -274,11 +261,11 @@ void HAL_Microphone_Init()
 
 void HAL_Joystick_Init(void)
 {
-	// Set the direction for UART1 RX and Tx
+	// Set the direction for Joystick X axis PB5
 	GPIO_PORTB_DIR_R &= ~(HAL_GPIO_BIT5);
 	// turn off digital operation on pins PB5
 	GPIO_PORTB_DEN_R &= ~HAL_GPIO_BIT5;
-	// Alternate function selection for Joystick x
+	// Alternate function selection for Joystick X axis
 	GPIO_PORTB_AFSEL_R |= HAL_GPIO_BIT5;
 	// turn on analog operation on pins PB5 for AIN11
 	GPIO_PORTB_AMSEL_R |= HAL_GPIO_BIT5;
@@ -308,7 +295,20 @@ void HAL_Joystick_Init(void)
 	GPIO_PORTE_PUR_R |= HAL_GPIO_BIT4;
 	// enable PortE
 	GPIO_PORTE_DEN_R |= HAL_GPIO_BIT4;
-	adcinit();
+
+    // Enable system clock to ADC modules
+    SYSCTL_RCGCADC_R |= SYSCTL_RCGCADC_R0;
+    // Allow time for clock to stabilize
+    while((SYSCTL_PRADC_R&0x01) == 0){};
+    // GPIO initialization in more specific functions
+    // select PLL as the time base (not needed, since default value)
+    ADC0_CC_R = ADC_CC_CS_SYSPLL;
+    //clear max sample rate field
+    ADC0_PC_R &= ~ADC_SPC_PHASE_M;
+    //configure for 125K samples/sec
+    ADC0_PC_R |= ADC_SPC_PHASE_22_5;
+    // Sequencer 3 is lowest priority
+    ADC0_SSPRI_R = 0x3210;
 
 	// disable sample sequencer 1 (SS1) for programming
 	ADC0_ACTSS_R &= ~ADC_ACTSS_ASEN1;
@@ -480,7 +480,7 @@ void HAL_Joystick_Input(uint16_t* x, uint16_t* y, uint32_t* select)
 	// read second result
 	*y = ADC0_SSFIFO1_R>>2;
 	// return 0(pressed) or 0x10(not pressed)
-	*select = HAL_BPAC_SWJ_STATUS;
+	//*select = HAL_BPAC_SWJ_STATUS;
 	// acknowledge completion
 	ADC0_ISC_R = ADC_ISC_IN1;
 }
@@ -540,7 +540,7 @@ void HAL_Init(void)
 	HAL_Buzzer_Init();
 //	HAL_Servo1_Init();
 //	HAL_Servo2_Init();
-//	HAL_Joystick_Init();
+	HAL_Joystick_Init();
 //	HAL_LPAD_UART_Init();
 	//HAL_LCD_Init();
 	//HAL_Sys_Delay(.5*DELAY_1SEC);
@@ -549,12 +549,15 @@ void HAL_Init(void)
 
 void HAL_Application_Start()
 {
-//	uint32_t* sel_pt;
-//	uint16_t raw_x, raw_y;
+	uint32_t* sel_pt;
+	uint16_t raw_x, raw_y;
 //	uint8_t out_x, out_y;
+
+
+
+
     uint8_t dir1=1,dir2=1;
     uint32_t j=850,k=880, data1=0, data2=0;
-//	double scale_value_x, scale_value_y;
 	PWM1_3_CMPA_R = ((HAL_PWM_BUZZ_LOAD-1)*0.90); // reset to position 0
 	PWM1_ENABLE_R |= PWM_ENABLE_PWM6EN;
 
@@ -568,7 +571,9 @@ void HAL_Application_Start()
 //    PWM0_ENABLE_R |= PWM_ENABLE_PWM7EN;
 	while(1)
 	{
-        if ((GPIO_PORTF_DATA_R & 0x01) == 0)
+        HAL_Joystick_Input(&raw_x, &raw_y, sel_pt);
+//        if ((GPIO_PORTF_DATA_R & 0x01) == 0)
+        if (raw_x > 750)
         {
             if (dir1 == 1)
                 j++;
@@ -578,24 +583,14 @@ void HAL_Application_Start()
                 dir1 = 0;
             if (j<=850)
                 dir1 = 1;
-
-        //for(j=850;j<=915;j=j+1)
-        //{
             data1 = (((HAL_PWM_BUZZ_LOAD-1)*j)/1000);
             PWM1_3_CMPA_R = data1;
 //          PWM0_3_CMPA_R = data;
             HAL_Sys_Delay(20000);
-        //}
-//        for(j=915;j>=850;j=j-1)
-//        {
-//            data1 = (((HAL_PWM_BUZZ_LOAD-1)*j)/1000);
-//            PWM1_3_CMPA_R = data1;
-//          PWM0_3_CMPA_R = data2;
-//            HAL_Sys_Delay(20000);
-//        }
         }
 
-        if ((GPIO_PORTF_DATA_R & 0x10) == 0)
+//        if ((GPIO_PORTF_DATA_R & 0x10) == 0)
+        if (raw_y > 750)
         {
             if (dir2 == 1)
                 k++;
@@ -605,22 +600,19 @@ void HAL_Application_Start()
                 dir2 = 0;
             if (k<=880)
                 dir2 = 1;
-//        for(k=940;k>=880;k=k-1)
-//        {
             data2 = (((HAL_PWM_BUZZ_LOAD-1)*k)/1000);
 //            PWM1_3_CMPA_R = data1;
             PWM0_3_CMPA_R = data2;
             HAL_Sys_Delay(20000);
-//        }
-//        for(k=880;k<=940;k=k+1)
-//        {
-//            data2 = (((HAL_PWM_BUZZ_LOAD-1)*k)/1000);
-//            PWM1_3_CMPA_R = data;
-//            PWM0_3_CMPA_R = data2;
-//            HAL_Sys_Delay(20000);
-//        }
         }
-//		HAL_Joystick_Input(&raw_x, &raw_y, sel_pt);
+//	}
+
+
+
+
+//	while (1){
+
+	}
 //		scale_value_x = ((((double)(raw_x)-1000.0)*256.0)/4096.0);
 //		out_x = (uint8_t)floor(scale_value_x);
 //		scale_value_y = ((((double)(raw_y)-1000.0)*256.0)/4096.0);
@@ -684,7 +676,7 @@ void HAL_Application_Start()
 //		HAL_Buzzer_Set(1,0);
 //		HAL_Sys_Delay(DELAY_1SEC);
 //		}
-	}
+//	}
 		//raw_input = hal_ADC0_readSs3();
 		//scaled_value = ((((double)raw_input-1000.0)*256.0)/2000.0);
 		//acc_xaxis_output = (uint8_t)floor(scaled_value);

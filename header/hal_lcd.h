@@ -81,6 +81,7 @@
 
 void HAL_LCD_Init(void);
 uint16_t HAL_LCD_Color565(uint8_t, uint8_t, uint8_t);
+
 //void hal_LCD_Sendcommnad(uint8_t command);
 //void hal_LCD_Senddata(uint8_t data);
 

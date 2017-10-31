@@ -124,7 +124,8 @@ static const uint8_t
 //      0x00, 0x7F,             //     XEND = 127
 //    ST7735_RASET  , 4      ,  //  2: Row addr set, 4 args, no delay:
 //      0x00, 0x00,             //     XSTART = 0
-//      0x00, 0x7F };           //     XEND = 127
+//      0x00, 0x7F };
+//     XEND = 127
 static const uint8_t
   Rcmd3[] = {                 // Init for 7735R, part 3 (red or green tab)
     4,                        //  4 commands in list:

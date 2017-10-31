@@ -41,8 +41,9 @@
 int main(void)
 {
 	HAL_Init();//incipient();
-//	hal_Init_Hardware();
+
 	HAL_Application_Start();//reprise();
+
 	return 0;
 }
 //-----------------------------------------------------------------------------
