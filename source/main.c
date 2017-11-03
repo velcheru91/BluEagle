@@ -27,8 +27,11 @@
 #ifndef _STDBOOL
 #include <stdbool.h>
 #endif
-#ifndef PUBLIC_HAL_H_
+#ifndef BLUEAGLE_HEADER_HAL_H_
 #include <hal.h>
+#endif
+#ifndef BLUEAGLE_HEADER_APP_H_
+#include <app.h>
 #endif
 //-----------------------------------------------------------------------------
 // Declarations
@@ -40,9 +43,10 @@
 
 int main(void)
 {
-	HAL_Init();//incipient();
-
-	HAL_Application_Start();//reprise();
+// Initializes the system
+    app_Incipient();
+// Keeps the system busy with application
+    app_Reprise();
 
 	return 0;
 }

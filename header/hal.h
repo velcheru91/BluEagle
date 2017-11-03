@@ -5,13 +5,24 @@
  *      Author: Venugopal Velcheru
  */
 //-----------------------------------------------------------------------------
-// Hardware Abstraction Layer Initialization
+// Hardware Abstraction Layer Header file
 //-----------------------------------------------------------------------------
-#ifndef PUBLIC_HAL_H_
-#define PUBLIC_HAL_H_
+#ifndef BLUEAGLE_HEADER_HAL_H_
+#define BLUEAGLE_HEADER_HAL_H_
 //-----------------------------------------------------------------------------
 // Device includes, defines, and assembler directives
 //-----------------------------------------------------------------------------
+typedef struct elapsed_timers{
+    uint32_t load;
+    uint32_t count;
+    bool active;
+}TIMER;
+
+extern TIMER TM1;
+extern TIMER TM2;
+extern TIMER TM3;
+extern TIMER TM4;
+
 typedef uint8_t BPACK_data_t;
 
 #define DELAY_1uSEC		1
@@ -100,7 +111,10 @@ void HAL_RGB_LPAD_Init(void);
 void HAL_ButtonLPAD_Init(void);
 void HAL_BT_UART_Init(void);
 void HAL_LPAD_UART_Init(void);
+void HAL_Init(void);
+void SysTick_Init(void);
 
+void SysTick_interrupt (void);
 bool HAL_Button1_Input(void);
 bool HAL_Button2_Input(void);
 void HAL_Accelero_Input(void);
@@ -111,7 +125,7 @@ void HAL_Joystick_Input(uint16_t*, uint16_t*, uint32_t*);
 void HAL_RGB_LPAD_Set(uint8_t, uint8_t, uint8_t);
 void HAL_Application_Start();
 void HAL_LPAD_UART_Write(uint8_t);
-void HAL_Init(void);
+
 //int16_t hal_ADC0_readSs3();
 
-#endif /* PUBLIC_HAL_INIT_H_ */
+#endif /* BLUEAGLE_HEADER_HAL_H_ */
