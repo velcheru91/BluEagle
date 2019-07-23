@@ -1,7 +1,6 @@
 /*
  * File name: main.c
  *
- *
  *  Created by					Created on
  *  Venugopal Velcheru			Sep 7, 2016
  */
@@ -19,8 +18,21 @@
 //-----------------------------------------------------------------------------
 // Device includes, defines, and assembler directives
 //-----------------------------------------------------------------------------
-#include "stdint.h"
-#include "tm4c123gh6pm.h"
+#ifndef _STDINT_H_
+#include <stdint.h>
+#endif
+#ifndef __TM4C123GH6PM_H__
+#include <tm4c123gh6pm.h>
+#endif
+#ifndef _STDBOOL
+#include <stdbool.h>
+#endif
+#ifndef BLUEAGLE_HEADER_HAL_H_
+#include <hal.h>
+#endif
+#ifndef BLUEAGLE_HEADER_APP_H_
+#include <app.h>
+#endif
 //-----------------------------------------------------------------------------
 // Declarations
 //-----------------------------------------------------------------------------
@@ -28,8 +40,14 @@
 //-----------------------------------------------------------------------------
 // Subroutines
 //-----------------------------------------------------------------------------
-int main(void) {
-	while (1);
+
+int main(void)
+{
+// Initializes the system
+    app_Incipient();
+// Keeps the system busy with application
+    app_Reprise();
+
 	return 0;
 }
 //-----------------------------------------------------------------------------
