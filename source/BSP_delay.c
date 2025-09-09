@@ -1,5 +1,5 @@
 #include <stdint.h>
-#include "BSP_delay.h"
+#include "BSP.h"
 // Runs on either the TM4C123 or MSP432 with an Educational BoosterPack MKII (BOOSTXL-EDUMKII)
 // This file contains the function prototypes for the software interface to the MKII BoosterPack.
 // This board support package (BSP) is an abstraction layer,
