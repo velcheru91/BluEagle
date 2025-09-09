@@ -19,8 +19,6 @@
 //-----------------------------------------------------------------------------
 // Device includes, defines, and assembler directives
 //-----------------------------------------------------------------------------
-#include "stdint.h"
-#include "tm4c123gh6pm.h"
 //-----------------------------------------------------------------------------
 // Declarations
 //-----------------------------------------------------------------------------
@@ -114,8 +112,7 @@
 // RGB LED red (jumper up) or LCD backlight (jumper down) connected to J4.39 (PWM)
 // buzzer connected to J4.40 (PWM)
 #include <stdint.h>
-#include "BSP_delay.h"
-#include "BSP_LCD.h"
+#include "BSP.h"
 #include "tm4c123gh6pm.h"
 
 void DisableInterrupts(void); // Disable interrupts
@@ -151,6 +148,45 @@ void EnableInterrupts(void)
     __asm("WMS_DONE0:");                        // ---
                                                 // 40 clocks/us + error
 }*/
+/**
+ *  Microcontroller's part revision number.
+ *  This variable is automatically initialized
+ *  during startup and may be declared as an external
+ *  variable where needed.
+ */
+int8_t sysctl_mcu_revision = MCU_REV_NOT_KNOWN_YET;
+/* Microcontroller's part revision number is an important
+ * piece of information, essential for implementation of
+ * workarounds of known hardware bugs, described in the
+ * Tiva(TM) C Series TM4C123x Microcontrollers Silicon Revisions 6 and 7,
+ *     Silicon Errata
+ * (http://www.ti.com/lit/er/spmz849c/spmz849c.pdf).
+ *
+ * @return microcontroller's part revision number (between 1 and 7 or a negative value if unknown)
+ */
+int8_t BSP_SysCtl_mcuRev(void)
+{
+     /* The revision number can be determined from the DID0
+     * register. See page 238 of the Data Sheet
+     * for more details.*/
+    uint8_t minor;
+    uint8_t major;
+    if ( MCU_REV_NOT_KNOWN_YET == sysctl_mcu_revision )
+    {
+        minor = (uint8_t) (SYSCTL_DID0_R & 0x000000FF);
+        major = (uint8_t) ((SYSCTL_DID1_R & 0x0000FF00) >> 8);
+        sysctl_mcu_revision = MCU_REV_UNKNOWN;
+        if ( 0==major && minor<=3 )
+        {
+          sysctl_mcu_revision = minor +1;
+        }
+        if ( 1==major && minor<=2 )
+        {
+          sysctl_mcu_revision = minor + 5;
+        }
+    }
+    return sysctl_mcu_revision;
+}
 // ------------BSP_Clock_InitFastest------------
 // Configure the system clock to run at the fastest
 // and most accurate settings.  For example, if the
@@ -455,8 +491,11 @@ void static BSP_i2cinit(void){
   I2C1_MTPR_R = 39;                // 9) configure for 100 kbps clock
   // 20*(TPR+1)*12.5ns = 10us, with TPR=39
 }
-int main(void){
+// ------------BSP_init------------
+// Initiates the Board Support Package hardware.
+void BSP_init(void){
   DisableInterrupts();
+  int8_t BSP_SysCtl_mcuRev(void)
   BSP_Clock_InitFastest();
   BSP_UART0_Init();
   putsUart0("\r\n-------------- WELCOME ----------------\r\n");
@@ -477,10 +516,15 @@ int main(void){
   putsUart0("\r\n");
   EnableInterrupts();
   BSP_Delay1ms(100);
-  while(1){
-    
-  }
+}
+// ------------main------------
 
+int main(void){
+  BSP_init();
+  
+  while(1){
+
+  };
 }
 //-----------------------------------------------------------------------------
 // End of file
