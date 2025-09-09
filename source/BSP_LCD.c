@@ -151,8 +151,7 @@
 // J4.35 nothing                         {TM4C123 PC6, MSP432 P6.7}
 
 #include <stdint.h>
-#include "BSP_delay.h"
-#include "BSP_LCD.h"
+#include "BSP.h"
 #include "tm4c123gh6pm.h"
 /* ********************** */
 /*      LCD Section       */
