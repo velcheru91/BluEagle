@@ -154,6 +154,11 @@
 // J2.19 servo PWM                       {TM4C123 PB2, MSP432 P2.5}
 // J4.35 nothing                         {TM4C123 PC6, MSP432 P6.7}
 
+/* Microcontroller revision not determined yet: */
+#define MCU_REV_NOT_KNOWN_YET      ( -128 )
+/* Unknown microcontroller revision: */
+#define MCU_REV_UNKNOWN              ( -1 )
+
 //color constants                  red  grn  blu
 #define LCD_BLACK      0x0000   //   0,   0,   0
 #define LCD_BLUE       0x001F   //   0,   0, 255
@@ -168,6 +173,11 @@
 #define LCD_WHITE      0xFFFF   // 255, 255, 255
 #define LCD_GREY       0x8410   // 128, 128, 128
 
+// ------------BSP_Delay1ms------------
+void BSP_Delay1ms(uint32_t n);
+
+// ------------BSP_SysCtl_mcuRev------------
+int8_t BSP_SysCtl_mcuRev(void);
 
 // ------------BSP_LCD_Init------------
 // Initialize the SPI and GPIO, which correspond with
