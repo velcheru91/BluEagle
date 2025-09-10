@@ -553,7 +553,7 @@ static int16_t _height = ST7735_TFTHEIGHT;
 // Inputs: c  8-bit code to transmit
 // Outputs: 8-bit reply
 // Assumes: SSI2 and ports have already been initialized and enabled
-uint8_t static writecommand(uint8_t c) {
+static uint8_t writecommand(uint8_t c) {
                                         // wait until SSI2 not busy/transmit FIFO empty
   while((SSI2_SR_R&SSI_SR_BSY)==SSI_SR_BSY){};
   TFT_CS = TFT_CS_LOW;
@@ -569,7 +569,7 @@ uint8_t static writecommand(uint8_t c) {
 // Inputs: c  8-bit data to transmit
 // Outputs: 8-bit reply
 // Assumes: SSI2 and ports have already been initialized and enabled
-uint8_t static writedata(uint8_t c) {
+static uint8_t writedata(uint8_t c) {
                                         // wait until SSI2 not busy/transmit FIFO empty
   while((SSI2_SR_R&SSI_SR_BSY)==SSI_SR_BSY){};
   TFT_CS = TFT_CS_LOW;
@@ -724,7 +724,7 @@ static const uint8_t
 
 // Companion code to the above tables.  Reads and issues
 // a series of LCD commands stored in ROM byte array.
-void static commandList(const uint8_t *addr) {
+static void commandList(const uint8_t *addr) {
 
   uint8_t numCommands, numArgs;
   uint16_t ms;
@@ -749,7 +749,7 @@ void static commandList(const uint8_t *addr) {
 
 
 // Initialization code common to both 'B' and 'R' type displays
-void static commonInit(const uint8_t *cmdList) {
+static void commonInit(const uint8_t *cmdList) {
   ColStart  = RowStart = 0; // May be overridden in init func
 
   // toggle RST low to reset; CS low so it'll listen to us
@@ -827,7 +827,7 @@ void static commonInit(const uint8_t *cmdList) {
 // Initialization for ST7735R screens (green or red tabs).
 // Input: option one of the enumerated options depending on tabs
 // Output: none
-void static ST7735_InitR(enum initRFlags option) {
+static void ST7735_InitR(enum initRFlags option) {
   commonInit(Rcmd1);
   if(option == INITR_GREENTAB) {
     commandList(Rcmd2green);
@@ -866,7 +866,7 @@ void BSP_LCD_Init(void){
 // Pixel colors are sent left to right, top to bottom
 // (same as Font table is encoded; different from regular bitmap)
 // Requires 11 bytes of transmission
-void static setAddrWindow(uint8_t x0, uint8_t y0, uint8_t x1, uint8_t y1) {
+static void setAddrWindow(uint8_t x0, uint8_t y0, uint8_t x1, uint8_t y1) {
 
   writecommand(ST7735_CASET); // Column addr set
   writedata(0x00);
@@ -886,7 +886,7 @@ void static setAddrWindow(uint8_t x0, uint8_t y0, uint8_t x1, uint8_t y1) {
 
 // Send two bytes of data, most significant byte first
 // Requires 2 bytes of transmission
-void static pushColor(uint16_t color) {
+static void pushColor(uint16_t color) {
   writedata((uint8_t)(color >> 8));
   writedata((uint8_t)color);
 }
@@ -1225,7 +1225,7 @@ uint32_t BSP_LCD_DrawString(uint16_t x, uint16_t y, char *pt, int16_t textColor)
 char Message[12];
 uint32_t Messageindex;
 
-void static fillmessage(uint32_t n){
+static void fillmessage(uint32_t n){
 // This function uses recursion to convert decimal number
 //   of unspecified length as an ASCII string
   if(n >= 10){
@@ -1235,7 +1235,7 @@ void static fillmessage(uint32_t n){
   Message[Messageindex] = (n+'0'); /* n is between 0 and 9 */
   if(Messageindex<11)Messageindex++;
 }
-void static fillmessage4(uint32_t n){
+static void fillmessage4(uint32_t n){
   if(n>9999)n=9999;
   if(n>=1000){  // 1000 to 9999
     Messageindex = 0;
@@ -1254,7 +1254,7 @@ void static fillmessage4(uint32_t n){
   }
   fillmessage(n);
 }
-void static fillmessage5(uint32_t n){
+static void fillmessage5(uint32_t n){
   if(n>99999)n=99999;
   if(n>=10000){  // 10000 to 99999
     Messageindex = 0;
@@ -1279,7 +1279,7 @@ void static fillmessage5(uint32_t n){
   }
   fillmessage(n);
 }
-void static fillmessage2_1(uint32_t n){
+static void fillmessage2_1(uint32_t n){
   if(n>999)n=999;
   if(n>=100){  // 100 to 999
     Message[0] = (n/100+'0'); /* tens digit */
@@ -1293,7 +1293,7 @@ void static fillmessage2_1(uint32_t n){
   Message[3] = (n+'0'); /* tenths digit */
   Message[4] = 0;
 }
-void static fillmessage2_Hex(uint32_t n){ char digit;
+static void fillmessage2_Hex(uint32_t n){ char digit;
   if(n>255){
     Message[0] = '*';
     Message[1] = '*';
