@@ -476,7 +476,7 @@ void Uart0Isr()
 	putcUart0(c);
 }
 #define MAXRETRIES              5  // number of receive attempts before giving up
-void static BSP_i2cinit(void){
+static void BSP_i2cinit(void){
   SYSCTL_RCGCI2C_R |= 0x0002;      // 1a) activate clock for I2C1
   SYSCTL_RCGCGPIO_R |= 0x0001;     // 1b) activate clock for Port A
   while((SYSCTL_PRGPIO_R&0x01) == 0){};// allow time for clock to stabilize
@@ -495,7 +495,7 @@ void static BSP_i2cinit(void){
 // Initiates the Board Support Package hardware.
 void BSP_init(void){
   DisableInterrupts();
-  int8_t BSP_SysCtl_mcuRev(void);
+  BSP_SysCtl_mcuRev();
   BSP_Clock_InitFastest();
   BSP_UART0_Init();
   putsUart0("\r\n-------------- WELCOME ----------------\r\n");
