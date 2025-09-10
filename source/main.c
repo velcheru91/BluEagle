@@ -112,6 +112,7 @@
 // RGB LED red (jumper up) or LCD backlight (jumper down) connected to J4.39 (PWM)
 // buzzer connected to J4.40 (PWM)
 #include <stdint.h>
+#include <string.h>
 #include "BSP.h"
 #include "tm4c123gh6pm.h"
 
@@ -287,7 +288,7 @@ uint8_t BSP_Button2_Input(void){
 // initialization.  The joystick uses sample sequencer 1,
 // the accelerometer sample sequencer 2, and the microphone
 // uses sample sequencer 3.
-void static adcinit(void){
+static void adcinit(void){
   SYSCTL_RCGCADC_R |= 0x00000001;  // 1) activate ADC0
   while((SYSCTL_PRADC_R&0x01) == 0){};// 2) allow time for clock to stabilize
                                    // 3-7) GPIO initialization in more specific functions
@@ -466,8 +467,7 @@ void putcUart0(char c)
 // Blocking function that writes a string when the UART buffer is not full
 void putsUart0(char* str)
 {
-	int i;
-    for (i = 0; i < strlen(str); i++)
+    for (unsigned int i = 0; i < strlen(str); i++)
 	  putcUart0(str[i]);
 }
 void Uart0Isr()
@@ -495,7 +495,7 @@ void static BSP_i2cinit(void){
 // Initiates the Board Support Package hardware.
 void BSP_init(void){
   DisableInterrupts();
-  int8_t BSP_SysCtl_mcuRev(void)
+  int8_t BSP_SysCtl_mcuRev(void);
   BSP_Clock_InitFastest();
   BSP_UART0_Init();
   putsUart0("\r\n-------------- WELCOME ----------------\r\n");
