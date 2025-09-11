@@ -59,7 +59,7 @@ FPU=-mfpu=fpv4-sp-d16 -mfloat-abi=hard
 #INCLUDE FLAGS
 CINCS = -I"C:/Program Files (x86)/GNU Arm Embedded Toolchain/10-2021.10/arm-none-eabi/include/" 
 INCS = $(CINCS) -I./$(INCDIR) -I./$(SRCDIR) -I./inc
-CXXINCS  = -I"./inc" -I"$(PATH)/include" -I"$(PATH)/x86_64-w64-mingw32/include" -I"$(PATH)/lib/gcc/x86_64-w64-mingw32/15.1.0/include" -I"$(PATH)/include/c++/15.1.0"
+CXXINCS += $(CINCS)
 #-specs=rdimon.specs
 CFLAGS =-mcpu=cortex-m4       \
     -mthumb                   \
