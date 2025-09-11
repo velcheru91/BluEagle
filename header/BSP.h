@@ -1,4 +1,4 @@
-// BSP_LCD.h
+// BSP.h
 // Runs on either the TM4C123 or MSP432 with an Educational BoosterPack MKII (BOOSTXL-EDUMKII)
 // This file contains the function prototypes for the software interface to the MKII BoosterPack.
 // This board support package (BSP) is an abstraction layer,
@@ -153,7 +153,7 @@
 // J2.14 nothing                         {TM4C123 PB6, MSP432 P1.7}
 // J2.19 servo PWM                       {TM4C123 PB2, MSP432 P2.5}
 // J4.35 nothing                         {TM4C123 PC6, MSP432 P6.7}
-
+#include <stdint.h>
 /* Microcontroller revision not determined yet: */
 #define MCU_REV_NOT_KNOWN_YET      ( -128 )
 /* Unknown microcontroller revision: */
@@ -176,9 +176,7 @@
 // ------------BSP_Delay1ms------------
 void BSP_Delay1ms(uint32_t n);
 
-// ------------BSP_SysCtl_mcuRev------------
 int8_t BSP_SysCtl_mcuRev(void);
-
 // ------------BSP_LCD_Init------------
 // Initialize the SPI and GPIO, which correspond with
 // BoosterPack pins J1.7 (SPI CLK), J2.13 (SPI CS), J2.15
@@ -316,7 +314,7 @@ void BSP_LCD_DrawCharS(int16_t x, int16_t y, char c, int16_t textColor, int16_t 
 //        bgColor   16-bit color of the background
 //        size      number of pixels per character pixel (e.g. size==2 prints each pixel of font as 2x2 square)
 // Output: none
-void BSP_LCD_DrawChar(int16_t x, int16_t y, char c, int16_t textColor, int16_t bgColor, uint8_t size);
+void BSP_LCD_DrawChar(int16_t x, int16_t y, char c, uint16_t textColor, uint16_t bgColor, uint8_t size);
 
 
 //------------BSP_LCD_DrawString------------
@@ -358,7 +356,7 @@ void BSP_LCD_OutUDec(uint32_t n, int16_t textColor);
 //        textColor 16-bit color of the numbers
 // Output: none
 // Fixed format 4 digits with no space before or after
-void BSP_LCD_OutUDec4(uint32_t n, int16_t textColor);
+void BSP_LCD_OutUDec4(uint32_t n, uint16_t textColor);
 
 //-----------------------BSP_LCD_OutUDec5-----------------------
 // Output a 32-bit number in unsigned 5-digit decimal format
@@ -367,7 +365,7 @@ void BSP_LCD_OutUDec4(uint32_t n, int16_t textColor);
 //        textColor 16-bit color of the numbers
 // Output: none
 // Fixed format 5 digits with no space before or after
-void BSP_LCD_OutUDec5(uint32_t n, int16_t textColor);
+void BSP_LCD_OutUDec5(uint32_t n, uint16_t textColor);
 
 //-----------------------BSP_LCD_OutUFix2_1-----------------------
 // Output a 32-bit number in unsigned 3-digit fixed point, 0.1 resolution
@@ -377,7 +375,7 @@ void BSP_LCD_OutUDec5(uint32_t n, int16_t textColor);
 //        textColor 16-bit color of the numbers
 // Output: none
 // Fixed format 4 characters with no space before or after
-void BSP_LCD_OutUFix2_1(uint32_t n, int16_t textColor);
+void BSP_LCD_OutUFix2_1(uint32_t n, uint16_t textColor);
 
 //-----------------------BSP_LCD_OutUHex2-----------------------
 // Output a 32-bit number in unsigned 2-digit hexadecimal format
@@ -387,7 +385,7 @@ void BSP_LCD_OutUFix2_1(uint32_t n, int16_t textColor);
 //        textColor 16-bit color of the numbers
 // Output: none
 // Fixed format 3 characters with comma after
-void BSP_LCD_OutUHex2(uint32_t n, int16_t textColor);
+void BSP_LCD_OutUHex2(uint32_t n, uint16_t textColor);
 
 // ------------BSP_LCD_Drawaxes------------
 // Set up the axes, labels, and other variables to
