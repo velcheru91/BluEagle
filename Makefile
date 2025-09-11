@@ -38,24 +38,29 @@
 #******************************************************************************
 
 PROJECT  = BluEagle
-CPP      = arm-none-eabi-g++.exe
-CC       = arm-none-eabi-gcc.exe
-AR       = arm-none-eabi-ar.exe
+CPP      = arm-none-eabi-g++
+CC       = arm-none-eabi-gcc
+AR       = arm-none-eabi-ar
+LD       = arm-none-eabi-ld
+OBJCOPY  = arm-none-eabi-objcopy
 SRCDIR   = source
 INCDIR   = header
 CFILE    = main.c
+BINDIR   = bin
 OBJ      = $(PROJECT).o
+LD_FILE  = $(PROJECT).ld
 SRCS= $(wildcard $(SRCDIR)/*.c)
-OBJECTS   = $(patsubst $(SRCDIR)/%.c,%.o,$(SRCS))
-BIN      = $(PROJECT).elf
+OBJECTS   = $(patsubst $(SRCDIR)/%.c,$(BINDIR)/%.o,$(SRCS))
+OBJS     = $(addprefix $(BINDIR)/,$(notdir $(SRCS:.c=.o)))
+BIN      = $(PROJECT)
 # Set the compiler CPU/FPU options.
 CPU=-mcpu=cortex-m4
 FPU=-mfpu=fpv4-sp-d16 -mfloat-abi=hard
-
+#INCLUDE FLAGS
 CINCS = -I"C:/Program Files (x86)/GNU Arm Embedded Toolchain/10-2021.10/arm-none-eabi/include/" 
-INCS = $(CINCS) -I./$(INCDIR) -I./$(SRCDIR)
+INCS = $(CINCS) -I./$(INCDIR) -I./$(SRCDIR) -I./inc
 CXXINCS  = -I"./inc" -I"$(PATH)/include" -I"$(PATH)/x86_64-w64-mingw32/include" -I"$(PATH)/lib/gcc/x86_64-w64-mingw32/15.1.0/include" -I"$(PATH)/include/c++/15.1.0"
-BINDIR   = bin
+#-specs=rdimon.specs
 CFLAGS =-mcpu=cortex-m4       \
     -mthumb                   \
 	-mfpu=fpv4-sp-d16         \
@@ -64,27 +69,33 @@ CFLAGS =-mcpu=cortex-m4       \
     -fdata-sections           \
     -O0                       \
     -g3                       \
-	-specs=rdimon.specs       \
+	-specs=nosys.specs        \
     -Wall                     \
-    -Werror                   \
     -Wextra                   \
-    -Wpedantic
-CXXFLAGS += $(CFLAGS)      
+    -Wpedantic #-Werror
+CXXFLAGS += $(CFLAGS) 
+#LINKER FLAGS
+LDFLAGS = -T $(LD_FILE) -e ResetISR     
 RM  = C:/cygwin/bin/rm.exe -f
 
-.PHONY: all all-before all-after clean clean-custom
+all: clean all-before $(BINDIR)/$(BIN).bin all-after
 
-all: clean all-before $(BINDIR)/$(BIN) all-after
+$(OBJECTS): $(BINDIR)/%.o: $(SRCDIR)/%.c 
+	$(CC) -c $< -o $@ $(INCS) $(CFLAGS)
+
+#$(BINDIR)/$(OBJ): $(OBJECTS)
+#	$(CC) -c -o $@ $(INCS) $(CFLAGS) $(LDFLAGS)
+
+#Program .elf
+#$(BINDIR)/$(BIN).elf: $(BINDIR)/$(OBJ) # $(LIB) # $(BINDIR)/main.o
+$(BINDIR)/$(BIN).elf: $(OBJECTS)
+	$(CC) -o $@ $^ $(INCS) $(CFLAGS) $(LDFLAGS)
+
+#Binary
+$(BINDIR)/$(BIN).bin: $(BINDIR)/$(BIN).elf
+	$(OBJCOPY) -O binary $< $@
 
 clean: clean-custom
-	$(RM) $(BINDIR)/* 
+	$(RM) $(BINDIR)/*
 
-#Program
-$(BINDIR)/$(BIN): $(BINDIR)/$(OBJ) # $(LIB) # $(BINDIR)/main.o
-	$(CC) $(INCS) $(CFLAGS) $(BINDIR)/$(OBJ) -o $(BINDIR)/$(BIN)
-
-$(BINDIR)/$(OBJ): $(OBJECTS)
-	$(CC) $(INCS) $(CFLAGS) $^ -o $@
-
-%.o: $(SRCDIR)/%.c 
-	$(CC) $(INCS) $(CFLAGS) -c $< -o $@
+.PHONY: all all-before all-after clean clean-custom
