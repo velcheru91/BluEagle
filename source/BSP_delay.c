@@ -1,5 +1,3 @@
-#include <stdint.h>
-#include "BSP.h"
 // Runs on either the TM4C123 or MSP432 with an Educational BoosterPack MKII (BOOSTXL-EDUMKII)
 // This file contains the function prototypes for the software interface to the MKII BoosterPack.
 // This board support package (BSP) is an abstraction layer,
@@ -154,12 +152,15 @@
 // J2.14 nothing                         {TM4C123 PB6, MSP432 P1.7}
 // J2.19 servo PWM                       {TM4C123 PB2, MSP432 P2.5}
 // J4.35 nothing                         {TM4C123 PC6, MSP432 P6.7}
+#include <stdint.h>
+#include "BSP.h"
 // delay function from sysctl.c
 // which delays 3.3*ulCount cycles
 // ulCount=23746 => 1ms = 23746*3.3cycle/loop/80,000
 void parrotdelay(uint32_t ulCount){
+  if(ulCount == 0){}
   __asm (  "    subs    r0, #1\n"
-      "    bne     Delay\n"
+      "    bne     parrotdelay\n"
       "    bx      lr\n");
 }
 // ------------BSP_Delay1ms------------
