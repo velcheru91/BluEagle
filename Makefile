@@ -75,7 +75,7 @@ CFLAGS =-mcpu=cortex-m4       \
     -Wpedantic #-Werror
 CXXFLAGS += $(CFLAGS) 
 #LINKER FLAGS
-LDFLAGS = -T $(LD_FILE) -e ResetISR     
+LDFLAGS = -T $(LD_FILE) -e ResetISR -Wl,-Map=$(BINDIR)/$(PROJECT).map
 RM  = C:/cygwin/bin/rm.exe -f
 
 all: clean all-before $(BINDIR)/$(BIN).bin all-after
@@ -89,7 +89,7 @@ $(OBJECTS): $(BINDIR)/%.o: $(SRCDIR)/%.c
 #Program .elf
 #$(BINDIR)/$(BIN).elf: $(BINDIR)/$(OBJ) # $(LIB) # $(BINDIR)/main.o
 $(BINDIR)/$(BIN).elf: $(OBJECTS)
-	$(CC) -o $@ $^ $(INCS) $(CFLAGS) $(LDFLAGS)
+	$(CC) -o $@ $^ $(INCS) $(CFLAGS) $(LDFLAGS) 
 
 #Binary
 $(BINDIR)/$(BIN).bin: $(BINDIR)/$(BIN).elf
