@@ -1,9 +1,22 @@
 **Project: Gesture-Controlled Robotic Arm** 
 
-_using Raspberry Pi 5, EK-TM4C123GH6PM development kit and Booster pack
-ARM tool chain used: gcc-arm-none-eabi-10.3-2021.10-win32.exe
-Version: 1.0
-Date: September 6, 2025_
+- _Raspberry Pi 5, EK-TM4C123GH6PM development kit and Booster pack_
+- _ARM tool chain used: gcc-arm-none-eabi-10.3-2021.10-win32.exe_
+- _Version: 1.0_
+- _Last Updated: September 10, 2025_
+
+**Build Notes**
+
+- Install the above mentioned ARM tool chain onto the host PC and add the bin directory to the PATH env variable.
+- Make sure to edit the compiler paths in Makefile and CMakeLists.txt files.
+- Build can be started either using manual Makefile or by invoking CMake from the command line.
+- Makefile generates .bin, .elf, .map in the bin directory.
+- CMake generates .bin, .elf, .map, .hex, .s19 in the Build folder.
+
+**_Pending Updates_**
+- Flash and Test the .bin file on the EK-TM4C123 dev & Booster kits.
+- Add app logic to read the analog signal from the joystick and display on the host PC console (UART).
+- Add mapping logic to translate Joystick X and Y axis to I2C PCA9685.
 
 **1. Introduction** 
 This project implements a gesture-controlled robotic arm where a user’s hand gestures, detected via a USB webcam and processed by an AI model on the Raspberry Pi 5, are translated into motion commands. 
@@ -59,7 +72,7 @@ Raspberry Pi 5:
   - Model Efficiency: TFLite model &lt;5MB for real-time Pi 5 execution.
   - Heat Dissipation: Continuous servo use may need cooling.
 
-**9. Future Extensions**
+**8. Future Extensions**
   - Integrate ROS 2 for modularity.
   - Add gesture + voice multimodal control.
   - Enable remote monitoring via MQTT/Node-RED.
