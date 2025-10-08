@@ -154,6 +154,12 @@
 // J2.19 servo PWM                       {TM4C123 PB2, MSP432 P2.5}
 // J4.35 nothing                         {TM4C123 PC6, MSP432 P6.7}
 
+#define NVIC_ST_CTRL_COUNT      0x00010000  // Count flag
+#define NVIC_ST_CTRL_CLK_SRC    0x00000004  // Clock Source
+#define NVIC_ST_CTRL_INTEN      0x00000002  // Interrupt enable
+#define NVIC_ST_CTRL_ENABLE     0x00000001  // Counter mode
+#define NVIC_ST_RELOAD_M        0x00FFFFFF  // Counter load value
+
 //color constants                  red  grn  blu
 #define LCD_BLACK      0x0000   //   0,   0,   0
 #define LCD_BLUE       0x001F   //   0,   0, 255
@@ -785,3 +791,13 @@ void BSP_TempSensor_Start(void);
 //         zero if measurement is not ready and pointers unchanged
 // Assumes: BSP_TempSensor_Init() has been called
 int BSP_TempSensor_End(int32_t *sensorV, int32_t *localT);
+
+void SysTick_Init(void);
+void SysTick_Wait(uint32_t delay);
+void SysTick_Wait10ms(uint32_t delay);
+void SysTick50_Wait10ms(uint32_t delay);
+// Time delay using busy wait.
+// This assumes 80 MHz system clock.
+void SysTick80_Wait10ms(uint32_t delay);
+void SysTick_Start(void);
+uint32_t SysTick_Stop(void);
