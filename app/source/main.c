@@ -280,6 +280,14 @@ void SysTick80_Wait10ms(uint32_t delay){
     SysTick_Wait(800000);  // wait 10ms (assumes 80MHz clock)
   }
 }
+// Time delay using busy wait.
+// This assumes 50 MHz system clock.
+void SysTick50_Wait10ms(uint32_t delay){
+  uint32_t i;
+  for(i=0; i<delay; i++){
+    SysTick_Wait(500000);  // wait 10ms (assumes 50MHz clock)
+  }
+}
 
 uint32_t Time;
 // start the stopwatch
@@ -605,8 +613,10 @@ static void BSP_i2cinit(void){
   GPIO_PORTA_AFSEL_R |= 0xC0;      // 6) enable alt funct on PA7-6
   GPIO_PORTA_DEN_R |= 0xC0;        // 7) enable digital I/O on PA7-6
   I2C1_MCR_R = I2C_MCR_MFE;        // 8) master function enable
-  I2C1_MTPR_R = 39;                // 9) configure for 100 kbps clock
+  //I2C1_MTPR_R = 39;                // 9) configure for 100 kbps clock
   // 20*(TPR+1)*12.5ns = 10us, with TPR=39
+  I2C1_MTPR_R = 24;                // 9) configure for 100 kbps clock
+  // 20*(TPR+1)*20ns = 10us, with TPR=24
 }
 
 static void BSP_i2c1_init(void){
@@ -736,7 +746,7 @@ static void prvTask_producer(void * pvParameters)
     {
         //vTaskDelayUntil( &xNextWakeTime, xBlockTime );
         putsUart0( "Sending value \r\n");
-        BSP_RGB_D_Toggle(1,1,1);
+        //BSP_RGB_D_Toggle(0,1,1);
         BSP_Joystick_Input(&x_val, &y_val, &select_val);
         xQueueSend( xQueue, &x_val, 0U );
         xQueueSend( yQueue, &y_val, 0U );
@@ -786,15 +796,15 @@ int main(void){
   putsUart0("Initiating Button2 Done.......\r\n");
   BSP_Joystick_Init();
   putsUart0("Initiating Joystick Done.......\r\n");
-  BSP_RGB_D_Init(1, 1, 1);
+  BSP_RGB_D_Init(0, 1, 1);
   putsUart0("Initiating Booster LEDs Done.......\r\n");
   //BSP_RGB_onboard_Init(1, 1, 1);
-  putsUart0("Initiating LEDs Done.......\r\n");
+  //putsUart0("Initiating LEDs Done.......\r\n");
   BSP_i2c1_init();
   putsUart0("Initiating I2C Done.......\r\n");
   //BSP_LCD_Init();
   //putsUart0("Initiating LCD Done.......\r\n");
-  //BSP_LCD_FillScreen(BSP_LCD_Color565(0, 0, 0));
+  //BSP_LCD_FillScreen(BSP_LCD_Color565(0x0F, 0x0F, 0x0F));
   //putsUart0("\r\n");
   //EnableInterrupts();
   IntMasterEnable();
@@ -805,7 +815,8 @@ int main(void){
   //    putsUart0("Initialization of watchdog reloading failed\r\n");
   //}
   //SysTick80_Wait10ms(1);  // approximately 10 ms
-
+  SysTick50_Wait10ms(1);  // approximately 10 ms
+  // Create the queues.
   xQueue = xQueueCreate(3, sizeof(uint16_t));
   yQueue = xQueueCreate(3, sizeof(uint16_t));
   putsUart0("System Init Done.......\r\n");

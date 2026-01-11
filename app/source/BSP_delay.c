@@ -154,6 +154,25 @@
 // J4.35 nothing                         {TM4C123 PC6, MSP432 P6.7}
 #include <stdint.h>
 #include "BSP.h"
+#include "tm4c123gh6pm.h"
+
+// Time delay using busy wait.
+// The delay parameter is in units of the core clock. (units of 20 nsec for 50 MHz clock)
+//void SysTick_Wait(uint32_t delay){
+//  volatile uint32_t elapsedTime;
+//  uint32_t startTime = NVIC_ST_CURRENT_R;
+//  do{
+//    elapsedTime = (startTime-NVIC_ST_CURRENT_R)&0x00FFFFFF;
+//  }
+//  while(elapsedTime <= delay);
+//}
+// The delay parameter is in units of the 80 MHz core clock. (12.5 ns)
+void SysTick_Delay(uint32_t delay){
+  NVIC_ST_RELOAD_R = delay-1;  // number of counts to wait
+  NVIC_ST_CURRENT_R = 0;       // any value written to CURRENT clears
+  while((NVIC_ST_CTRL_R&0x00010000)==0){ // wait for count flag
+  }
+}
 // delay function from sysctl.c
 // which delays 3.3*ulCount cycles
 // ulCount=23746 => 1ms = 23746*3.3cycle/loop/80,000
@@ -169,9 +188,13 @@ void parrotdelay(uint32_t ulCount){
 // Inputs: n  number of 1 msec to wait
 // Outputs: none
 void BSP_Delay1ms(uint32_t n){
-  while(n){
-    //parrotdelay(23746);    // 1 msec, tuned at 80 MHz, originally part of LCD module
-    parrotdelay(14836);    // 1 msec, tuned at 50 MHz
-    n--;
+  uint32_t i;
+  for(i=0; i<n; i++){
+    SysTick_Delay(500000);  // wait 1ms (assumes 50MHz clock)
   }
+  //while(n){
+    //parrotdelay(23746);    // 1 msec, tuned at 80 MHz, originally part of LCD module
+  //  parrotdelay(14836);    // 1 msec, tuned at 50 MHz
+  //  n--;
+  //}
 }
