@@ -472,6 +472,98 @@ void LED_blue_on_off(int val)
 {
   GPIOPinWrite(GPIO_PORTF_BASE, GPIO_PIN_2, (val == 1?GPIO_PIN_2:0));
 }
+// ------------BSP_RGB_Init------------
+// Initialize the GPIO and PWM or timer modules which
+// correspond with BoosterPack pins J4.39 (red),
+// J4.38 (green), and J4.37 (blue).  The frequency
+// must be fast enough to not appear to flicker, and
+// the duty cycle is represented as a 10-bit number.
+// 1023 is fully (or nearly fully) on.
+// 0 is fully (or nearly fully) off.
+// Input: red is 10-bit duty cycle for red
+//        green is 10-bit duty cycle for green
+//        blue is 10-bit duty cycle for blue
+// Output: none
+static uint16_t PWMCycles;         // number of PWM cycles per period
+void BSP_RGB_Init(uint16_t red, uint16_t green, uint16_t blue){
+  if((red > 1023) || (green > 1023) || (blue > 1023)){
+    return;                        // invalid input
+  }
+  // ***************** Timer1B initialization *****************
+  SYSCTL_RCGCTIMER_R |= 0x02;      // activate clock for Timer1
+  SYSCTL_RCGCGPIO_R |= 0x0020;     // activate clock for Port F
+  while((SYSCTL_PRGPIO_R&0x20) == 0){};// allow time for clock to stabilize
+  GPIO_PORTF_AFSEL_R |= 0x08;      // enable alt funct on PF3
+  GPIO_PORTF_DEN_R |= 0x08;        // enable digital I/O on PF3
+                                   // configure PF3 as T1CCP1
+  GPIO_PORTF_PCTL_R = (GPIO_PORTF_PCTL_R&0xFFFF0FFF)+0x00007000;
+  GPIO_PORTF_AMSEL_R &= ~0x08;     // disable analog functionality on PF3
+  while((SYSCTL_PRTIMER_R&0x02) == 0){};// allow time for clock to stabilize
+  TIMER1_CTL_R &= ~TIMER_CTL_TBEN; // disable Timer1B during setup
+  TIMER1_CFG_R = TIMER_CFG_16_BIT; // configure for 16-bit timer mode
+                                   // configure for alternate (PWM) mode
+  TIMER1_TBMR_R = (TIMER_TBMR_TBAMS|TIMER_TBMR_TBMR_PERIOD);
+  PWMCycles = ClockFrequency/2048;
+  TIMER1_TBILR_R = PWMCycles - 1;  // defines when output signal is set
+  TIMER1_TBMATCHR_R = (red*PWMCycles)>>10;// defines when output signal is cleared
+                                   // enable Timer1B 16-b, PWM, inverted to match comments
+  TIMER1_CTL_R |= (TIMER_CTL_TBPWML|TIMER_CTL_TBEN);
+  // ***************** Timer3B initialization *****************
+  SYSCTL_RCGCTIMER_R |= 0x08;      // activate clock for Timer3
+  SYSCTL_RCGCGPIO_R |= 0x0002;     // activate clock for Port B
+  while((SYSCTL_PRGPIO_R&0x02) == 0){};// allow time for clock to stabilize
+  GPIO_PORTB_AFSEL_R |= 0x08;      // enable alt funct on PB3
+  GPIO_PORTB_DEN_R |= 0x08;        // enable digital I/O on PB3
+                                   // configure PB3 as T3CCP1
+  GPIO_PORTB_PCTL_R = (GPIO_PORTB_PCTL_R&0xFFFF0FFF)+0x00007000;
+  GPIO_PORTB_AMSEL_R &= ~0x08;     // disable analog functionality on PB3
+  while((SYSCTL_PRTIMER_R&0x08) == 0){};// allow time for clock to stabilize
+  TIMER3_CTL_R &= ~TIMER_CTL_TBEN; // disable Timer3B during setup
+  TIMER3_CFG_R = TIMER_CFG_16_BIT; // configure for 16-bit timer mode
+                                   // configure for alternate (PWM) mode
+  TIMER3_TBMR_R = (TIMER_TBMR_TBAMS|TIMER_TBMR_TBMR_PERIOD);
+  TIMER3_TBILR_R = PWMCycles - 1;  // defines when output signal is set
+  TIMER3_TBMATCHR_R = (green*PWMCycles)>>10;// defines when output signal is cleared
+                                   // enable Timer3B 16-b, PWM, inverted to match comments
+  TIMER3_CTL_R |= (TIMER_CTL_TBPWML|TIMER_CTL_TBEN);
+  // ***************** Wide Timer0A initialization *****************
+  SYSCTL_RCGCWTIMER_R |= 0x01;     // activate clock for Wide Timer0
+  SYSCTL_RCGCGPIO_R |= 0x0004;     // activate clock for Port C
+  while((SYSCTL_PRGPIO_R&0x04) == 0){};// allow time for clock to stabilize
+  GPIO_PORTC_AFSEL_R |= 0x10;      // enable alt funct on PC4
+  GPIO_PORTC_DEN_R |= 0x10;        // enable digital I/O on PC4
+                                   // configure PC4 as WT0CCP0
+  GPIO_PORTC_PCTL_R = (GPIO_PORTC_PCTL_R&0xFFF0FFFF)+0x00070000;
+  GPIO_PORTC_AMSEL_R &= ~0x10;     // disable analog functionality on PC4
+  while((SYSCTL_PRWTIMER_R&0x01) == 0){};// allow time for clock to stabilize
+  WTIMER0_CTL_R &= ~TIMER_CTL_TAEN;// disable Wide Timer0A during setup
+  WTIMER0_CFG_R = TIMER_CFG_16_BIT;// configure for 32-bit timer mode
+                                   // configure for alternate (PWM) mode
+  WTIMER0_TAMR_R = (TIMER_TAMR_TAAMS|TIMER_TAMR_TAMR_PERIOD);
+  WTIMER0_TAILR_R = PWMCycles - 1; // defines when output signal is set
+  WTIMER0_TAMATCHR_R = (blue*PWMCycles)>>10;// defines when output signal is cleared
+                                   // enable Wide Timer0A 32-b, PWM, inverted to match comments
+  WTIMER0_CTL_R |= (TIMER_CTL_TAPWML|TIMER_CTL_TAEN);
+}
+
+// ------------BSP_RGB_Set------------
+// Set new duty cycles for the RGB LEDs.
+// 1023 is fully (or nearly fully) on.
+// 0 is fully (or nearly fully) off.
+// Input: red is 10-bit duty cycle for red
+//        green is 10-bit duty cycle for green
+//        blue is 10-bit duty cycle for blue
+// Output: none
+// Assumes: BSP_RGB_Init() has been called
+void BSP_RGB_Set(uint16_t red, uint16_t green, uint16_t blue){
+  if((red > 1023) || (green > 1023) || (blue > 1023)){
+    return;                        // invalid input
+  }
+  TIMER1_TBMATCHR_R = (red*PWMCycles)>>10;// defines when output signal is cleared
+  TIMER3_TBMATCHR_R = (green*PWMCycles)>>10;// defines when output signal is cleared
+  WTIMER0_TAMATCHR_R = (blue*PWMCycles)>>10;// defines when output signal is cleared
+}
+
 // ------------BSP_RGB_D_Init------------
 // Initialize the GPIO pins for output which
 // correspond with BoosterPack pins J4.39 (red),
@@ -796,8 +888,9 @@ int main(void){
   putsUart0("Initiating Button2 Done.......\r\n");
   BSP_Joystick_Init();
   putsUart0("Initiating Joystick Done.......\r\n");
-  BSP_RGB_D_Init(0, 1, 1);
-  putsUart0("Initiating Booster LEDs Done.......\r\n");
+  //BSP_RGB_D_Init(0, 1, 1);
+  BSP_RGB_Init(1000, 1000, 1000);
+  putsUart0("Initiating LEDs Done.......\r\n");
   //BSP_RGB_onboard_Init(1, 1, 1);
   //putsUart0("Initiating LEDs Done.......\r\n");
   BSP_i2c1_init();
