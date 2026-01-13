@@ -866,6 +866,10 @@ static void prvTask_consumer(void * pvParameters)
         putsUart0( " Y value: ");
         putsUart0(y_buffer);
         putsUart0( "\r\n");
+        BSP_LCD_SetCursor(5, 3);
+        BSP_LCD_OutUDec4((uint32_t)x_val, BSP_LCD_Color565(255, 255, 255));
+        BSP_LCD_SetCursor(5, 4);
+        BSP_LCD_OutUDec4((uint32_t)y_val, BSP_LCD_Color565(255, 255, 255));
         vTaskDelay( pdMS_TO_TICKS( 200 ) ); 
 
     }
@@ -888,6 +892,7 @@ int main(void){
   putsUart0("Initiating Button2 Done.......\r\n");
   BSP_Joystick_Init();
   putsUart0("Initiating Joystick Done.......\r\n");
+  //BSP_RGB_Init(0, 0, 0);
   //BSP_RGB_D_Init(0, 1, 1);
   //BSP_RGB_Init(1000, 1000, 1000);
   //putsUart0("Initiating LEDs Done.......\r\n");
@@ -902,6 +907,19 @@ int main(void){
   //EnableInterrupts();
   IntMasterEnable();
   //BSP_Delay1ms(100);
+  BSP_LCD_DrawString(0, 0, "Red=    ", BSP_LCD_Color565(255, 0, 0));
+  BSP_LCD_SetCursor(4, 0);
+  BSP_LCD_OutUDec(500, BSP_LCD_Color565(255, 0, 0));
+  BSP_LCD_DrawString(0, 1, "Green=    ", BSP_LCD_Color565(0, 255, 0));
+  BSP_LCD_SetCursor(6, 1);
+  BSP_LCD_OutUDec(500, BSP_LCD_Color565(0, 255, 0));
+  BSP_LCD_DrawString(0, 2, "Blue=    ", BSP_LCD_Color565(0, 0, 255));
+  BSP_LCD_SetCursor(5, 2);
+  BSP_LCD_OutUDec(500, BSP_LCD_Color565(0, 0, 255));
+      // print joystick status
+  BSP_LCD_DrawString(0, 3, "JoyX=    ", BSP_LCD_Color565(255, 255, 255));
+  BSP_LCD_DrawString(0, 4, "JoyY=    ", BSP_LCD_Color565(255, 255, 255));
+  
   /* Initialize and start a watchdog timer: */
   //if ( 0 == watchdogInit( 0, 10000) )
   //{

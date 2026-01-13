@@ -194,7 +194,7 @@ void BSP_Delay1ms(uint32_t n){
   }
   //while(n){
     //parrotdelay(23746);    // 1 msec, tuned at 80 MHz, originally part of LCD module
-  //  parrotdelay(14836);    // 1 msec, tuned at 50 MHz
-  //  n--;
+    //parrotdelay(836);    // 1 msec, tuned at 50 MHz
+    //n--;
   //}
 }
