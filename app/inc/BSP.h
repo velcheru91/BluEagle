@@ -177,7 +177,9 @@
 #define LCD_YELLOW     0xFFE0   // 255, 255,   0
 #define LCD_WHITE      0xFFFF   // 255, 255, 255
 #define LCD_GREY       0x8410   // 128, 128, 128
-
+void DisableInterrupts(void);
+void EnableInterrupts(void);
+int8_t BSP_SysCtl_mcuRev(void);
 // ------------BSP_Button1_Init------------
 // Initialize a GPIO pin for input, which corresponds
 // with BoosterPack pin J4.33.
@@ -292,7 +294,7 @@ void BSP_RGB_D_Set(int red, int green, int blue);
 // Output: none
 // Assumes: BSP_RGB_D_Init() has been called
 void BSP_RGB_D_Toggle(int red, int green, int blue);
-
+void BSP_UART0_Init();
 // ------------BSP_Buzzer_Init------------
 // Initialize the GPIO and PWM or timer modules which
 // correspond with BoosterPack pin J4.40.  The
@@ -613,7 +615,7 @@ void BSP_LCD_PlotIncrement(void);
 // Input: none
 // Output: none
 void BSP_Clock_InitFastest(void);
-
+void BSP_Clock_Init_50Mz(void);
 // ------------BSP_Clock_GetFreq------------
 // Return the current system clock frequency for the
 // LaunchPad.
@@ -806,3 +808,14 @@ void SysTick80_Wait10ms(uint32_t delay);
 void SysTick_Start(void);
 uint32_t SysTick_Stop(void);
 char* itoa(int32_t value, char* str, uint8_t radix);
+
+// Blocking function that writes a serial character when the UART buffer is not full
+void putcUart0(char c);
+
+// Blocking function that writes a string when the UART buffer is not full
+void putsUart0(char* str);
+
+void Uart0Isr();
+
+//static void BSP_i2cinit(void);
+void BSP_i2c1_init(void);

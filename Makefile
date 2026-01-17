@@ -112,9 +112,10 @@ FREERTOS_PORT_OBJS = port.o
 
 DRIVERS_OBJS = fpu.o scb.o
 #Unnnecessary driver object files may be commented out
-DRIVERLIB_OBJS = cpu.o gpio.o i2c.o interrupt.o pwm.o sysctl.o systick.o
+DRIVERLIB_OBJS = cpu.o gpio.o i2c.o interrupt.o pwm.o sysctl.o systick.o driver_pca9685.o
 
-APP_OBJS = main.o BSP_delay.o BSP_LCD.o nostdlib.o startup_gcc.o
+APP_OBJS = main.o BSP_delay.o BSP_LCD.o nostdlib.o startup_gcc.o BSP.o \
+			 driver_pca9685_interface_template.o 
 # nostdlib.o must be commented out if standard lib is going to be linked!
 #APP_OBJS += nostdlib.o
 

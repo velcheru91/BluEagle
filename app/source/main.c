@@ -99,6 +99,8 @@
 #include <../driverlib/gpio.h>
 #include <../driverlib/interrupt.h>
 #include <inc/hw_memmap.h>
+#include "driver_pca9685.h"
+#include "driver_pca9685_interface.h"
 
 //#include "wdtask.h"
 #define mainTASK_A_PRIORITY                 (tskIDLE_PRIORITY + 1)
@@ -107,724 +109,14 @@
 
 QueueHandle_t xQueue = NULL;
 QueueHandle_t yQueue = NULL;
+static pca9685_handle_t gs_handle;        /**< pca9685 handle */
+
 //void DisableInterrupts(void); // Disable interrupts
 //void EnableInterrupts(void);  // Enable interrupts
 //long StartCritical (void);    // previous I bit, disable interrupts
 //void EndCritical(long sr);    // restore I bit to previous value
 //void WaitForInterrupt(void);  // low power mode
 
-static uint32_t ClockFrequency = 16000000; // cycles/second
-void DisableInterrupts(void)
-{
- __asm  ("    CPSID  I\n"
-    "    BX     LR\n");
-}
-void EnableInterrupts(void)
-{
- __asm  ("    CPSIE  I\n"
-    "    BX     LR\n");
-}
-
-// Approximate busy waiting (in units of microseconds), given a 40 MHz system clock
-/*void waitMicrosecond(uint32_t us)
-{
-	                                            // Approx clocks per us
-	__asm("WMS_LOOP0:   MOV  R1, #6");          // 1
-    __asm("WMS_LOOP1:   SUB  R1, #1");          // 6
-    __asm("             CBZ  R1, WMS_DONE1");   // 5+1*3
-    __asm("             NOP");                  // 5
-    __asm("             B    WMS_LOOP1");       // 5*3
-    __asm("WMS_DONE1:   SUB  R0, #1");          // 1
-    __asm("             CBZ  R0, WMS_DONE0");   // 1
-    __asm("             B    WMS_LOOP0");       // 1*3
-    __asm("WMS_DONE0:");                        // ---
-                                                // 40 clocks/us + error
-}*/
-/**
- *  Microcontroller's part revision number.
- *  This variable is automatically initialized
- *  during startup and may be declared as an external
- *  variable where needed.
- */
-int8_t sysctl_mcu_revision = MCU_REV_NOT_KNOWN_YET;
-/* Declared in sysctl.c */
-//extern int8_t sysctl_mcu_revision;
-/* Microcontroller's part revision number is an important
- * piece of information, essential for implementation of
- * workarounds of known hardware bugs, described in the
- * Tiva(TM) C Series TM4C123x Microcontrollers Silicon Revisions 6 and 7,
- *     Silicon Errata
- * (http://www.ti.com/lit/er/spmz849c/spmz849c.pdf).
- *
- * @return microcontroller's part revision number (between 1 and 7 or a negative value if unknown)
- */
-int8_t BSP_SysCtl_mcuRev(void)
-{
-     /* The revision number can be determined from the DID0
-     * register. See page 238 of the Data Sheet
-     * for more details.*/
-    uint8_t minor;
-    uint8_t major;
-    if ( MCU_REV_NOT_KNOWN_YET == sysctl_mcu_revision )
-    {
-        minor = (uint8_t) (SYSCTL_DID0_R & 0x000000FF);
-        major = (uint8_t) ((SYSCTL_DID1_R & 0x0000FF00) >> 8);
-        sysctl_mcu_revision = MCU_REV_UNKNOWN;
-        if ( 0==major && minor<=3 )
-        {
-          sysctl_mcu_revision = minor +1;
-        }
-        if ( 1==major && minor<=2 )
-        {
-          sysctl_mcu_revision = minor + 5;
-        }
-    }
-    return sysctl_mcu_revision;
-}
-// ------------BSP_Clock_InitFastest------------
-// Configure the system clock to run at the fastest
-// and most accurate settings.  For example, if the
-// LaunchPad has a crystal, it should be used here.
-// Call BSP_Clock_GetFreq() to get the current system
-// clock frequency for the LaunchPad.
-// Input: none
-// Output: none
-void BSP_Clock_InitFastest(void){
-  // 0) configure the system to use RCC2 for advanced features
-  //    such as 400 MHz PLL and non-integer System Clock Divisor
-  SYSCTL_RCC2_R |= SYSCTL_RCC2_USERCC2;
-  // 1) bypass PLL while initializing
-  SYSCTL_RCC2_R |= SYSCTL_RCC2_BYPASS2;
-  // 2) select the crystal value and oscillator source
-  SYSCTL_RCC_R &= ~SYSCTL_RCC_XTAL_M;   // clear XTAL field
-  SYSCTL_RCC_R += SYSCTL_RCC_XTAL_16MHZ;// configure for 16 MHz crystal
-  SYSCTL_RCC2_R &= ~SYSCTL_RCC2_OSCSRC2_M;// clear oscillator source field
-  SYSCTL_RCC2_R += SYSCTL_RCC2_OSCSRC2_MO;// configure for main oscillator source
-  // 3) activate PLL by clearing PWRDN
-  SYSCTL_RCC2_R &= ~SYSCTL_RCC2_PWRDN2;
-  // 4) set the desired system divider and the system divider least significant bit
-  SYSCTL_RCC2_R |= SYSCTL_RCC2_DIV400;  // use 400 MHz PLL
-  SYSCTL_RCC2_R = (SYSCTL_RCC2_R&~0x1FC00000) // clear system clock divider field
-                  + (4<<22);      // configure for 80 MHz clock
-  // 5) wait for the PLL to lock by polling PLLLRIS
-  while((SYSCTL_RIS_R&SYSCTL_RIS_PLLLRIS)==0){};
-  // 6) enable use of PLL by clearing BYPASS
-  SYSCTL_RCC2_R &= ~SYSCTL_RCC2_BYPASS2;
-  ClockFrequency = 80000000;
-  // Enable GPIO ports A,B,E,F peripherals
-  SYSCTL_RCGC2_R = SYSCTL_RCGC2_GPIOA | SYSCTL_RCGC2_GPIOB | SYSCTL_RCGC2_GPIOE | SYSCTL_RCGC2_GPIOF;
-}
-// ------------BSP_Clock_InitFastest------------
-// Configure the system clock to run at the fastest
-// and most accurate settings.  For example, if the
-// LaunchPad has a crystal, it should be used here.
-// Call BSP_Clock_GetFreq() to get the current system
-// clock frequency for the LaunchPad.
-// Input: none
-// Output: none
-void BSP_Clock_Init_50Mz(void){
-  // 0) configure the system to use RCC2 for advanced features
-  //    such as 400 MHz PLL and non-integer System Clock Divisor
-  SYSCTL_RCC2_R |= SYSCTL_RCC2_USERCC2;
-  // 1) bypass PLL while initializing
-  SYSCTL_RCC2_R |= SYSCTL_RCC2_BYPASS2;
-  // 2) select the crystal value and oscillator source
-  SYSCTL_RCC_R &= ~SYSCTL_RCC_XTAL_M;   // clear XTAL field
-  SYSCTL_RCC_R += SYSCTL_RCC_XTAL_16MHZ;// configure for 16 MHz crystal
-  SYSCTL_RCC2_R &= ~SYSCTL_RCC2_OSCSRC2_M;// clear oscillator source field
-  SYSCTL_RCC2_R += SYSCTL_RCC2_OSCSRC2_MO;// configure for main oscillator source
-  // 3) activate PLL by clearing PWRDN
-  SYSCTL_RCC2_R &= ~SYSCTL_RCC2_PWRDN2;
-  // 4) set the desired system divider and the system divider least significant bit
-  SYSCTL_RCC2_R |= SYSCTL_RCC2_DIV400;  // use 400 MHz PLL
-  SYSCTL_RCC2_R = (SYSCTL_RCC2_R&~0x1FC00000) // clear system clock divider field
-                  + (7<<22);      // configure for 50 MHz clock
-  // 5) wait for the PLL to lock by polling PLLLRIS
-  while((SYSCTL_RIS_R&SYSCTL_RIS_PLLLRIS)==0){};
-  // 6) enable use of PLL by clearing BYPASS
-  SYSCTL_RCC2_R &= ~SYSCTL_RCC2_BYPASS2;
-  ClockFrequency = 50000000;
-  // Enable GPIO ports A,B,E,F peripherals
-  SYSCTL_RCGC2_R = SYSCTL_RCGC2_GPIOA | SYSCTL_RCGC2_GPIOB | SYSCTL_RCGC2_GPIOE | SYSCTL_RCGC2_GPIOF;
-}
-// Initialize SysTick with busy wait running at bus clock.
-void SysTick_Init(void){
-  NVIC_ST_CTRL_R = 0;                   // disable SysTick during setup
-  NVIC_ST_RELOAD_R = NVIC_ST_RELOAD_M;  // maximum reload value
-  NVIC_ST_CURRENT_R = 0;                // any write to current clears it
-                                        // enable SysTick with core clock
-  NVIC_ST_CTRL_R = NVIC_ST_CTRL_ENABLE+NVIC_ST_CTRL_CLK_SRC;
-}
-// Time delay using busy wait.
-// The delay parameter is in units of the core clock. (units of 20 nsec for 50 MHz clock)
-//void SysTick_Wait(uint32_t delay){
-//  volatile uint32_t elapsedTime;
-//  uint32_t startTime = NVIC_ST_CURRENT_R;
-//  do{
-//    elapsedTime = (startTime-NVIC_ST_CURRENT_R)&0x00FFFFFF;
-//  }
-//  while(elapsedTime <= delay);
-//}
-// The delay parameter is in units of the 80 MHz core clock. (12.5 ns)
-void SysTick_Wait(uint32_t delay){
-  NVIC_ST_RELOAD_R = delay-1;  // number of counts to wait
-  NVIC_ST_CURRENT_R = 0;       // any value written to CURRENT clears
-  while((NVIC_ST_CTRL_R&0x00010000)==0){ // wait for count flag
-  }
-}
-// Time delay using busy wait.
-// This assumes 80 MHz system clock.
-void SysTick80_Wait10ms(uint32_t delay){
-  uint32_t i;
-  for(i=0; i<delay; i++){
-    SysTick_Wait(800000);  // wait 10ms (assumes 80MHz clock)
-  }
-}
-// Time delay using busy wait.
-// This assumes 50 MHz system clock.
-void SysTick50_Wait10ms(uint32_t delay){
-  uint32_t i;
-  for(i=0; i<delay; i++){
-    SysTick_Wait(500000);  // wait 10ms (assumes 50MHz clock)
-  }
-}
-
-uint32_t Time;
-// start the stopwatch
-void SysTick_Start(void){
-  Time = NVIC_ST_CURRENT_R;
-}
-// end the stopwatch, and return elased time in bus cycles
-uint32_t SysTick_Stop(void){
-  return (Time-NVIC_ST_CURRENT_R)&0x00FFFFFF;
-}
-// ------------BSP_Button1_Init------------
-// Initialize a GPIO pin for input, which corresponds
-// with BoosterPack pin J4.33.
-// Input: none
-// Output: none
-void BSP_Button1_Init(void){
-  SYSCTL_RCGCGPIO_R |= 0x00000008; // 1) activate clock for Port D
-  while((SYSCTL_PRGPIO_R&0x08) == 0){};// allow time for clock to stabilize
-                                   // 2) no need to unlock PD6
-  GPIO_PORTD_AMSEL_R &= ~0x40;     // 3) disable analog on PD6
-                                   // 4) configure PD6 as GPIO
-  GPIO_PORTD_PCTL_R = (GPIO_PORTD_PCTL_R&0xF0FFFFFF)+0x00000000;
-  GPIO_PORTD_DIR_R &= ~0x40;       // 5) make PD6 input
-  GPIO_PORTD_AFSEL_R &= ~0x40;     // 6) disable alt funct on PD6
-  GPIO_PORTD_PUR_R &= ~0x40;       // disable pull-up on PD6
-  GPIO_PORTD_DEN_R |= 0x40;        // 7) enable digital I/O on PD6
-}
-// ------------BSP_Button1_Input------------
-// Read and return the immediate status of Button1.
-// Button de-bouncing is not considered.
-// Input: none
-// Output: non-zero if Button1 unpressed
-//         zero if Button1 pressed
-// Assumes: BSP_Button1_Init() has been called
-#define BUTTON1   (*((volatile uint32_t *)0x40007100))  /* PD6 */
-uint8_t BSP_Button1_Input(void){
-  return BUTTON1;                  // return 0(pressed) or 0x40(not pressed)
-}
-
-// ------------BSP_Button2_Init------------
-// Initialize a GPIO pin for input, which corresponds
-// with BoosterPack pin J4.32.
-// Input: none
-// Output: none
-void BSP_Button2_Init(void){
-  SYSCTL_RCGCGPIO_R |= 0x00000008; // 1) activate clock for Port D
-  while((SYSCTL_PRGPIO_R&0x08) == 0){};// allow time for clock to stabilize
-  GPIO_PORTD_LOCK_R = 0x4C4F434B;  // 2) unlock GPIO Port D
-  GPIO_PORTD_CR_R = 0xFF;          // allow changes to PD7-0
-  GPIO_PORTD_AMSEL_R &= ~0x80;     // 3) disable analog on PD7
-                                   // 4) configure PD7 as GPIO
-  GPIO_PORTD_PCTL_R = (GPIO_PORTD_PCTL_R&0x0FFFFFFF)+0x00000000;
-  GPIO_PORTD_DIR_R &= ~0x80;       // 5) make PD7 input
-  GPIO_PORTD_AFSEL_R &= ~0x80;     // 6) disable alt funct on PD7
-  GPIO_PORTD_PUR_R &= ~0x80;       // disable pull-up on PD7
-  GPIO_PORTD_DEN_R |= 0x80;        // 7) enable digital I/O on PD7
-}
-
-// ------------BSP_Button2_Input------------
-// Read and return the immediate status of Button2.
-// Button de-bouncing is not considered.
-// Input: none
-// Output: non-zero if Button2 unpressed
-//         zero if Button2 pressed
-// Assumes: BSP_Button2_Init() has been called
-#define BUTTON2   (*((volatile uint32_t *)0x40007200))  /* PD7 */
-uint8_t BSP_Button2_Input(void){
-  return BUTTON2;                  // return 0(pressed) or 0x80(not pressed)
-}
-// There are six analog inputs on the Educational BoosterPack MKII:
-// microphone (J1.6/PE5/AIN8)
-// joystick X (J1.2/PB5/AIN11) and Y (J3.26/PD3/AIN4)
-// accelerometer X (J3.23/PD0/AIN7), Y (J3.24/PD1/AIN6), and Z (J3.25/PD2/AIN5)
-// All six initialization functions can use this general ADC
-// initialization.  The joystick uses sample sequencer 1,
-// the accelerometer sample sequencer 2, and the microphone
-// uses sample sequencer 3.
-static void adcinit(void){
-  SYSCTL_RCGCADC_R |= 0x00000001;  // 1) activate ADC0
-  while((SYSCTL_PRADC_R&0x01) == 0){};// 2) allow time for clock to stabilize
-                                   // 3-7) GPIO initialization in more specific functions
-  ADC0_PC_R &= ~0xF;               // 8) clear max sample rate field
-  ADC0_PC_R |= 0x1;                //    configure for 125K samples/sec
-  ADC0_SSPRI_R = 0x3210;           // 9) Sequencer 3 is lowest priority
-                                   // 10-15) sample sequencer initialization in more specific functions
-}
-// ------------BSP_Joystick_Init------------
-// Initialize a GPIO pin for input, which corresponds
-// with BoosterPack pin J1.5 (Select button).
-// Initialize two ADC pins, which correspond with
-// BoosterPack pins J1.2 (X) and J3.26 (Y).
-// Input: none
-// Output: none
-void BSP_Joystick_Init(void){
-  SYSCTL_RCGCGPIO_R |= 0x0000001A; // 1) activate clock for Ports E, D, and B
-  while((SYSCTL_PRGPIO_R&0x1A) != 0x1A){};// allow time for clocks to stabilize
-                                   // 2) no need to unlock PE4, PD3, or PB5
-  GPIO_PORTE_AMSEL_R &= ~0x10;     // 3a) disable analog on PE4
-  GPIO_PORTD_AMSEL_R |= 0x08;      // 3b) enable analog on PD3
-  GPIO_PORTB_AMSEL_R |= 0x20;      // 3c) enable analog on PB5
-                                   // 4) configure PE4 as GPIO
-  GPIO_PORTE_PCTL_R = (GPIO_PORTE_PCTL_R&0xFFF0FFFF)+0x00000000;
-  GPIO_PORTE_DIR_R &= ~0x10;       // 5a) make PE4 input
-  GPIO_PORTD_DIR_R &= ~0x08;       // 5b) make PD3 input
-  GPIO_PORTB_DIR_R &= ~0x20;       // 5c) make PB5 input
-  GPIO_PORTE_AFSEL_R &= ~0x10;     // 6a) disable alt funct on PE4
-  GPIO_PORTD_AFSEL_R |= 0x08;      // 6b) enable alt funct on PD3
-  GPIO_PORTB_AFSEL_R |= 0x20;      // 6c) enable alt funct on PB5
-  GPIO_PORTE_DEN_R |= 0x10;        // 7a) enable digital I/O on PE4
-  GPIO_PORTD_DEN_R &= ~0x08;       // 7b) enable analog functionality on PD3
-  GPIO_PORTB_DEN_R &= ~0x20;       // 7c) enable analog functionality on PB5
-  adcinit();                       // 8-9) general ADC initialization
-  ADC0_ACTSS_R &= ~0x0002;         // 10) disable sample sequencer 1
-  ADC0_EMUX_R &= ~0x00F0;          // 11) seq1 is software trigger
-  ADC0_SSMUX1_R = 0x004B;          // 12) set channels for SS1
-  ADC0_SSCTL1_R = 0x0060;          // 13) no TS0 D0 IE0 END0 TS1 D1, yes IE1 END1
-  ADC0_IM_R &= ~0x0002;            // 14) disable SS1 interrupts
-  ADC0_ACTSS_R |= 0x0002;          // 15) enable sample sequencer 1
-}
-
-// ------------BSP_Joystick_Input------------
-// Read and return the immediate status of the
-// joystick.  Button de-bouncing for the Select
-// button is not considered.  The joystick X- and
-// Y-positions are returned as 10-bit numbers,
-// even if the ADC on the LaunchPad is more precise.
-// Input: x is pointer to store X-position (0 to 1023)
-//        y is pointer to store Y-position (0 to 1023)
-//        select is pointer to store Select status (0 if pressed)
-// Output: none
-// Assumes: BSP_Joystick_Init() has been called
-#define SELECT    (*((volatile uint32_t *)0x40024040))  /* PE4 */
-void BSP_Joystick_Input(uint16_t *x, uint16_t *y, uint8_t *select){
-  ADC0_PSSI_R = 0x0002;            // 1) initiate SS1
-  while((ADC0_RIS_R&0x02)==0){};   // 2) wait for conversion done
-  *x = ADC0_SSFIFO1_R>>2;          // 3a) read first result
-  *y = ADC0_SSFIFO1_R>>2;          // 3b) read second result
-  *select = SELECT;                // return 0(pressed) or 0x10(not pressed)
-  ADC0_ISC_R = 0x0002;             // 4) acknowledge completion
-}
-
-// ------------BSP_RGB_Init------------
-// Initialize the GPIO pins for output which
-// correspond to pins PF_1 (red),
-// PF_3 (green), and PF_2 (blue).  Instead of using
-// PWM or timer modules, this configuration uses just
-// digital fully on or fully off.
-// non-zero is fully on.
-// 0 is fully off.
-// Input: red is initial status for red
-//        green is initial status for green
-//        blue is initial status for blue
-// Output: none
-void BSP_RGB_onboard_Init(int red, int green, int blue){
-  // Enable the GPIO port that is used for the on-board LED.
-  SysCtlPeripheralEnable(SYSCTL_PERIPH_GPIOF);
-  // Check if the peripheral access is enabled.
-  while(!SysCtlPeripheralReady(SYSCTL_PERIPH_GPIOF)){}
-  // Enable the GPIO pin for the LED (PortF pins).  Set the direction as output, and
-  // enable the GPIO pin for digital function.
-  GPIOPinTypeGPIOOutput(GPIO_PORTF_BASE, (red == 1?GPIO_PIN_1:0));
-  GPIOPinTypeGPIOOutput(GPIO_PORTF_BASE, (blue == 1?GPIO_PIN_2:0));
-  GPIOPinTypeGPIOOutput(GPIO_PORTF_BASE, (green == 1?GPIO_PIN_3:0));
-}
-
-void LED_all_on_off(int red, int green, int blue)
-{
-  // Turn on the LED.
-  GPIOPinWrite(GPIO_PORTF_BASE, GPIO_PIN_1, (red == 1?GPIO_PIN_1:0));
-  GPIOPinWrite(GPIO_PORTF_BASE, GPIO_PIN_2, (blue == 1?GPIO_PIN_2:0));
-  GPIOPinWrite(GPIO_PORTF_BASE, GPIO_PIN_3, (green == 1?GPIO_PIN_3:0));
-}
-void LED_red_on_off(int val)
-{
-  GPIOPinWrite(GPIO_PORTF_BASE, GPIO_PIN_1, (val == 1?GPIO_PIN_1:0));
-}
-void LED_green_on_off(int val)
-{
-  GPIOPinWrite(GPIO_PORTF_BASE, GPIO_PIN_3, (val == 1?GPIO_PIN_3:0));
-}
-void LED_blue_on_off(int val)
-{
-  GPIOPinWrite(GPIO_PORTF_BASE, GPIO_PIN_2, (val == 1?GPIO_PIN_2:0));
-}
-// ------------BSP_RGB_Init------------
-// Initialize the GPIO and PWM or timer modules which
-// correspond with BoosterPack pins J4.39 (red),
-// J4.38 (green), and J4.37 (blue).  The frequency
-// must be fast enough to not appear to flicker, and
-// the duty cycle is represented as a 10-bit number.
-// 1023 is fully (or nearly fully) on.
-// 0 is fully (or nearly fully) off.
-// Input: red is 10-bit duty cycle for red
-//        green is 10-bit duty cycle for green
-//        blue is 10-bit duty cycle for blue
-// Output: none
-static uint16_t PWMCycles;         // number of PWM cycles per period
-void BSP_RGB_Init(uint16_t red, uint16_t green, uint16_t blue){
-  if((red > 1023) || (green > 1023) || (blue > 1023)){
-    return;                        // invalid input
-  }
-  // ***************** Timer1B initialization *****************
-  SYSCTL_RCGCTIMER_R |= 0x02;      // activate clock for Timer1
-  SYSCTL_RCGCGPIO_R |= 0x0020;     // activate clock for Port F
-  while((SYSCTL_PRGPIO_R&0x20) == 0){};// allow time for clock to stabilize
-  GPIO_PORTF_AFSEL_R |= 0x08;      // enable alt funct on PF3
-  GPIO_PORTF_DEN_R |= 0x08;        // enable digital I/O on PF3
-                                   // configure PF3 as T1CCP1
-  GPIO_PORTF_PCTL_R = (GPIO_PORTF_PCTL_R&0xFFFF0FFF)+0x00007000;
-  GPIO_PORTF_AMSEL_R &= ~0x08;     // disable analog functionality on PF3
-  while((SYSCTL_PRTIMER_R&0x02) == 0){};// allow time for clock to stabilize
-  TIMER1_CTL_R &= ~TIMER_CTL_TBEN; // disable Timer1B during setup
-  TIMER1_CFG_R = TIMER_CFG_16_BIT; // configure for 16-bit timer mode
-                                   // configure for alternate (PWM) mode
-  TIMER1_TBMR_R = (TIMER_TBMR_TBAMS|TIMER_TBMR_TBMR_PERIOD);
-  PWMCycles = ClockFrequency/2048;
-  TIMER1_TBILR_R = PWMCycles - 1;  // defines when output signal is set
-  TIMER1_TBMATCHR_R = (red*PWMCycles)>>10;// defines when output signal is cleared
-                                   // enable Timer1B 16-b, PWM, inverted to match comments
-  TIMER1_CTL_R |= (TIMER_CTL_TBPWML|TIMER_CTL_TBEN);
-  // ***************** Timer3B initialization *****************
-  SYSCTL_RCGCTIMER_R |= 0x08;      // activate clock for Timer3
-  SYSCTL_RCGCGPIO_R |= 0x0002;     // activate clock for Port B
-  while((SYSCTL_PRGPIO_R&0x02) == 0){};// allow time for clock to stabilize
-  GPIO_PORTB_AFSEL_R |= 0x08;      // enable alt funct on PB3
-  GPIO_PORTB_DEN_R |= 0x08;        // enable digital I/O on PB3
-                                   // configure PB3 as T3CCP1
-  GPIO_PORTB_PCTL_R = (GPIO_PORTB_PCTL_R&0xFFFF0FFF)+0x00007000;
-  GPIO_PORTB_AMSEL_R &= ~0x08;     // disable analog functionality on PB3
-  while((SYSCTL_PRTIMER_R&0x08) == 0){};// allow time for clock to stabilize
-  TIMER3_CTL_R &= ~TIMER_CTL_TBEN; // disable Timer3B during setup
-  TIMER3_CFG_R = TIMER_CFG_16_BIT; // configure for 16-bit timer mode
-                                   // configure for alternate (PWM) mode
-  TIMER3_TBMR_R = (TIMER_TBMR_TBAMS|TIMER_TBMR_TBMR_PERIOD);
-  TIMER3_TBILR_R = PWMCycles - 1;  // defines when output signal is set
-  TIMER3_TBMATCHR_R = (green*PWMCycles)>>10;// defines when output signal is cleared
-                                   // enable Timer3B 16-b, PWM, inverted to match comments
-  TIMER3_CTL_R |= (TIMER_CTL_TBPWML|TIMER_CTL_TBEN);
-  // ***************** Wide Timer0A initialization *****************
-  SYSCTL_RCGCWTIMER_R |= 0x01;     // activate clock for Wide Timer0
-  SYSCTL_RCGCGPIO_R |= 0x0004;     // activate clock for Port C
-  while((SYSCTL_PRGPIO_R&0x04) == 0){};// allow time for clock to stabilize
-  GPIO_PORTC_AFSEL_R |= 0x10;      // enable alt funct on PC4
-  GPIO_PORTC_DEN_R |= 0x10;        // enable digital I/O on PC4
-                                   // configure PC4 as WT0CCP0
-  GPIO_PORTC_PCTL_R = (GPIO_PORTC_PCTL_R&0xFFF0FFFF)+0x00070000;
-  GPIO_PORTC_AMSEL_R &= ~0x10;     // disable analog functionality on PC4
-  while((SYSCTL_PRWTIMER_R&0x01) == 0){};// allow time for clock to stabilize
-  WTIMER0_CTL_R &= ~TIMER_CTL_TAEN;// disable Wide Timer0A during setup
-  WTIMER0_CFG_R = TIMER_CFG_16_BIT;// configure for 32-bit timer mode
-                                   // configure for alternate (PWM) mode
-  WTIMER0_TAMR_R = (TIMER_TAMR_TAAMS|TIMER_TAMR_TAMR_PERIOD);
-  WTIMER0_TAILR_R = PWMCycles - 1; // defines when output signal is set
-  WTIMER0_TAMATCHR_R = (blue*PWMCycles)>>10;// defines when output signal is cleared
-                                   // enable Wide Timer0A 32-b, PWM, inverted to match comments
-  WTIMER0_CTL_R |= (TIMER_CTL_TAPWML|TIMER_CTL_TAEN);
-}
-
-// ------------BSP_RGB_Set------------
-// Set new duty cycles for the RGB LEDs.
-// 1023 is fully (or nearly fully) on.
-// 0 is fully (or nearly fully) off.
-// Input: red is 10-bit duty cycle for red
-//        green is 10-bit duty cycle for green
-//        blue is 10-bit duty cycle for blue
-// Output: none
-// Assumes: BSP_RGB_Init() has been called
-void BSP_RGB_Set(uint16_t red, uint16_t green, uint16_t blue){
-  if((red > 1023) || (green > 1023) || (blue > 1023)){
-    return;                        // invalid input
-  }
-  TIMER1_TBMATCHR_R = (red*PWMCycles)>>10;// defines when output signal is cleared
-  TIMER3_TBMATCHR_R = (green*PWMCycles)>>10;// defines when output signal is cleared
-  WTIMER0_TAMATCHR_R = (blue*PWMCycles)>>10;// defines when output signal is cleared
-}
-
-// ------------BSP_RGB_D_Init------------
-// Initialize the GPIO pins for output which
-// correspond with BoosterPack pins J4.39 (red),
-// J4.38 (green), and J4.37 (blue).  Instead of using
-// PWM or timer modules, this configuration uses just
-// digital fully on or fully off.
-// non-zero is fully on.
-// 0 is fully off.
-// Input: red is initial status for red
-//        green is initial status for green
-//        blue is initial status for blue
-// Output: none
-#define RED       (*((volatile uint32_t *)0x40025020))  /* PF3 */
-#define GREEN     (*((volatile uint32_t *)0x40005020))  /* PB3 */
-#define BLUE      (*((volatile uint32_t *)0x40006040))  /* PC4 */
-// ------------BSP_RGB_D_Set------------
-// Set new statuses for the RGB LEDs.
-// non-zero is fully on.
-// 0 is fully off.
-// Input: red is status for red
-//        green is status for green
-//        blue is status for blue
-// Output: none
-// Assumes: BSP_RGB_D_Init() has been called
-void BSP_RGB_D_Set(int red, int green, int blue){
-  if(red){
-    RED = 0x08;
-  } else{
-    RED = 0x00;
-  }
-  if(green){
-    GREEN = 0x08;
-  } else{
-    GREEN = 0x00;
-  }
-  if(blue){
-    BLUE = 0x10;
-  } else{
-    BLUE = 0x00;
-  }
-}
-void BSP_RGB_D_Init(int red, int green, int blue){
-  SYSCTL_RCGCGPIO_R |= 0x00000026; // 1) activate clock for Ports F, C, and B
-  while((SYSCTL_PRGPIO_R&0x26) != 0x26){};// allow time for clocks to stabilize
-                                   // 2) no need to unlock PF3, PC4, or PB3
-  GPIO_PORTF_AMSEL_R &= ~0x08;     // 3a) disable analog on PF3
-  GPIO_PORTC_AMSEL_R &= ~0x10;     // 3b) disable analog on PC4
-  GPIO_PORTB_AMSEL_R &= ~0x08;     // 3c) disable analog on PB3
-                                   // 4a) configure PF3 as GPIO
-  GPIO_PORTF_PCTL_R = (GPIO_PORTF_PCTL_R&0xFFFF0FFF)+0x00000000;
-                                   // 4b) configure PC4 as GPIO
-  GPIO_PORTC_PCTL_R = (GPIO_PORTC_PCTL_R&0xFFF0FFFF)+0x00000000;
-                                   // 4c) configure PB3 as GPIO
-  GPIO_PORTB_PCTL_R = (GPIO_PORTB_PCTL_R&0xFFFF0FFF)+0x00000000;
-  GPIO_PORTF_DIR_R |= 0x08;        // 5a) make PF3 output
-  GPIO_PORTC_DIR_R |= 0x10;        // 5b) make PC4 output
-  GPIO_PORTB_DIR_R |= 0x08;        // 5c) make PB3 output
-  GPIO_PORTF_AFSEL_R &= ~0x08;     // 6a) disable alt funct on PF3
-  GPIO_PORTC_AFSEL_R &= ~0x10;     // 6b) disable alt funct on PC4
-  GPIO_PORTB_AFSEL_R &= ~0x08;     // 6c) disable alt funct on PB3
-  GPIO_PORTF_PUR_R &= ~0x08;       // disable pull-up on PF3
-  GPIO_PORTC_PUR_R &= ~0x10;       // disable pull-up on PC4
-  GPIO_PORTB_PUR_R &= ~0x08;       // disable pull-up on PB3
-  GPIO_PORTF_DEN_R |= 0x08;        // 7a) enable digital I/O on PF3
-  GPIO_PORTC_DEN_R |= 0x10;        // 7b) enable digital I/O on PC4
-  GPIO_PORTB_DEN_R |= 0x08;        // 7c) enable digital I/O on PB3
-  BSP_RGB_D_Set(red, green, blue);
-}
-// ------------BSP_RGB_D_Toggle------------
-// Toggle the statuses of the RGB LEDs.
-// non-zero is toggle.
-// 0 is do not toggle.
-// Input: red is toggle for red
-//        green is toggle for green
-//        blue is toggle for blue
-// Output: none
-// Assumes: BSP_RGB_D_Init() has been called
-void BSP_RGB_D_Toggle(int red, int green, int blue){
-  if(red){
-    RED = RED^0x08;
-  }
-  if(green){
-    GREEN = GREEN^0x08;
-  }
-  if(blue){
-    BLUE = BLUE^0x10;
-  }
-}
-   
-void BSP_UART0_Init()
-   {// Configuring uart0
-   SYSCTL_RCGCUART_R |= SYSCTL_RCGCUART_R0; // activate UART0
-   SYSCTL_RCGCGPIO_R |= 0x01; // activate port A
-   UART0_CTL_R &= ~UART_CTL_UARTEN;      // disable UART
-   //UART0_IBRD_R = 43;                    // IBRD = int(80,000,000 / (16 * 115200)) = int(43.402778)
-   //UART0_FBRD_R = 26;                    // FBRD = round(0.402778 * 64) = 26
-   UART0_IBRD_R = 27;                    // IBRD = int(50,000,000 / (16 * 115200)) = int(27.1267361)
-   UART0_FBRD_R = 8;                    // FBRD = round(.1267361 * 64) = 8
-                                       // 8 bit word length (no parity bits, one stop bit, FIFOs)
-   UART0_LCRH_R = (UART_LCRH_WLEN_8);//|UART_LCRH_FEN);
-   UART0_CTL_R |= UART_CTL_TXE | UART_CTL_RXE | UART_CTL_UARTEN;       // enable UART  TX, RX
-   GPIO_PORTA_AFSEL_R |= 0x03;           // enable alt funct on PA1-0
-   GPIO_PORTA_DEN_R |= 0x03;             // enable digital I/O on PA1-0
-                                        // configure PA1-0 as UART
-   GPIO_PORTA_PCTL_R = (GPIO_PORTA_PCTL_R&0xFFFFFF00)+0x00000011;
-   GPIO_PORTA_AMSEL_R &= ~0x03;          // disable analog functionality on PA
-   UART0_IM_R = UART_IM_RXIM;                       // turn-on RX interrupt
-	NVIC_EN0_R = 1<<5;
-}
-// Blocking function that writes a serial character when the UART buffer is not full
-void putcUart0(char c)
-{
-	while (UART0_FR_R & UART_FR_TXFF);
-	UART0_DR_R = c;
-}
-// Blocking function that writes a string when the UART buffer is not full
-void putsUart0(char* str)
-{
-    for (unsigned int i = 0; i < strlen(str); i++)
-	  putcUart0(str[i]);
-}
-void Uart0Isr()
-{
-	char c = UART0_DR_R;
-	putcUart0(c);
-}
-
-
-
-static void BSP_i2cinit(void){
-  SYSCTL_RCGCI2C_R |= 0x0002;      // 1a) activate clock for I2C1
-  SYSCTL_RCGCGPIO_R |= 0x0001;     // 1b) activate clock for Port A
-  while((SYSCTL_PRGPIO_R&0x01) == 0){};// allow time for clock to stabilize
-                                   // 2) no need to unlock PA7-6
-  GPIO_PORTA_AMSEL_R &= ~0xC0;     // 3) disable analog functionality on PA7-6
-                                   // 4) configure PA7-6 as I2C1
-  GPIO_PORTA_PCTL_R = (GPIO_PORTA_PCTL_R&0x00FFFFFF)+0x33000000;
-  GPIO_PORTA_ODR_R |= 0x80;        // 5) enable open drain on PA7 only
-  GPIO_PORTA_AFSEL_R |= 0xC0;      // 6) enable alt funct on PA7-6
-  GPIO_PORTA_DEN_R |= 0xC0;        // 7) enable digital I/O on PA7-6
-  I2C1_MCR_R = I2C_MCR_MFE;        // 8) master function enable
-  //I2C1_MTPR_R = 39;                // 9) configure for 100 kbps clock
-  // 20*(TPR+1)*12.5ns = 10us, with TPR=39
-  I2C1_MTPR_R = 24;                // 9) configure for 100 kbps clock
-  // 20*(TPR+1)*20ns = 10us, with TPR=24
-}
-
-static void BSP_i2c1_init(void){
-  BSP_i2cinit();                   // 1) activate clock for Port A (done in BSP_i2cinit())
-                                   // allow time for clock to stabilize (done in BSP_i2cinit())
-                                   // 2) no need to unlock PA2
-  GPIO_PORTA_AMSEL_R &= ~0x20;     // 3) disable analog on PA5
-                                   // 4) configure PA5 as GPIO
-  GPIO_PORTA_PCTL_R = (GPIO_PORTA_PCTL_R&0xFF0FFFFF)+0x00000000;
-  GPIO_PORTA_DIR_R &= ~0x20;       // 5) make PA5 input
-  GPIO_PORTA_AFSEL_R &= ~0x20;     // 6) disable alt funct on PA5
-  GPIO_PORTA_DEN_R |= 0x20;        // 7) enable digital I/O on PA5
-}
-
-#if (0)
-static void BSP_i2c2_init(void){
-  BSP_i2cinit();                   // 1) activate clock for Port A (done in BSP_i2cinit())
-                                   // allow time for clock to stabilize (done in BSP_i2cinit())
-                                   // 2) no need to unlock PA2
-  GPIO_PORTA_AMSEL_R &= ~0x04;     // 3) disable analog on PA2
-                                   // 4) configure PA2 as GPIO
-  GPIO_PORTA_PCTL_R = (GPIO_PORTA_PCTL_R&0xFFFFF0FF)+0x00000000;
-  GPIO_PORTA_DIR_R &= ~0x04;       // 5) make PA5 input
-  GPIO_PORTA_AFSEL_R &= ~0x04;     // 6) disable alt funct on PA2
-  GPIO_PORTA_DEN_R |= 0x04;        // 7) enable digital I/O on PA2
-}
-
-// receives two bytes from specified slave
-// Note for HMC6352 compass only:
-// Used with 'A' commands
-// Note for TMP102 thermometer only:
-// Used to read the contents of the pointer register
-static uint16_t I2C_Recv2(int8_t slave){
-  uint8_t data1,data2;
-  int retryCounter = 1;
-  do{
-    while(I2C1_MCS_R&I2C_MCS_BUSY){};// wait for I2C ready
-    I2C1_MSA_R = (slave<<1)&0xFE;    // MSA[7:1] is slave address
-    I2C1_MSA_R |= 0x01;              // MSA[0] is 1 for receive
-    I2C1_MCS_R = (0
-                         | I2C_MCS_ACK      // positive data ack
-//                         & ~I2C_MCS_STOP    // no stop
-                         | I2C_MCS_START    // generate start/restart
-                         | I2C_MCS_RUN);    // master enable
-    while(I2C1_MCS_R&I2C_MCS_BUSY){};// wait for transmission done
-    data1 = (I2C1_MDR_R&0xFF);       // MSB data sent first
-    I2C1_MCS_R = (0
-//                         & ~I2C_MCS_ACK     // negative data ack (last byte)
-                         | I2C_MCS_STOP     // generate stop
-//                         & ~I2C_MCS_START   // no start/restart
-                         | I2C_MCS_RUN);    // master enable
-    while(I2C1_MCS_R&I2C_MCS_BUSY){};// wait for transmission done
-    data2 = (I2C1_MDR_R&0xFF);       // LSB data sent last
-    retryCounter = retryCounter + 1;        // increment retry counter
-  }                                         // repeat if error
-  while(((I2C1_MCS_R&(I2C_MCS_ADRACK|I2C_MCS_ERROR)) != 0) && (retryCounter <= MAXRETRIES));
-  return (data1<<8)+data2;                  // usually returns 0xFFFF on error
-}
-
-// sends three bytes to specified slave
-// Note for HMC6352 compass only:
-// Used with 'w' and 'G' commands
-// Note for TMP102 thermometer only:
-// Used to change the contents of the pointer register
-// Returns 0 if successful, nonzero if error
-static uint16_t I2C_Send3(int8_t slave, uint8_t data1, uint8_t data2, uint8_t data3){
-  while(I2C1_MCS_R&I2C_MCS_BUSY){};// wait for I2C ready
-  I2C1_MSA_R = (slave<<1)&0xFE;    // MSA[7:1] is slave address
-  I2C1_MSA_R &= ~0x01;             // MSA[0] is 0 for send
-  I2C1_MDR_R = data1&0xFF;         // prepare first byte
-  I2C1_MCS_R = (0
-//                       & ~I2C_MCS_ACK     // no data ack (no data on send)
-//                       & ~I2C_MCS_STOP    // no stop
-                       | I2C_MCS_START    // generate start/restart
-                       | I2C_MCS_RUN);    // master enable
-  while(I2C1_MCS_R&I2C_MCS_BUSY){};// wait for transmission done
-                                          // check error bits
-  if((I2C1_MCS_R&(I2C_MCS_DATACK|I2C_MCS_ADRACK|I2C_MCS_ERROR)) != 0){
-    I2C1_MCS_R = (0                // send stop if nonzero
-//                       & ~I2C_MCS_ACK     // no data ack (no data on send)
-                       | I2C_MCS_STOP     // stop
-//                       & ~I2C_MCS_START   // no start/restart
-//                       & ~I2C_MCS_RUN     // master disable
-                       );
-                                          // return error bits if nonzero
-    return (I2C1_MCS_R&(I2C_MCS_DATACK|I2C_MCS_ADRACK|I2C_MCS_ERROR));
-  }
-  I2C1_MDR_R = data2&0xFF;         // prepare second byte
-  I2C1_MCS_R = (0
-//                       & ~I2C_MCS_ACK     // no data ack (no data on send)
-//                       & ~I2C_MCS_STOP    // no stop
-//                       & ~I2C_MCS_START   // no start/restart
-                       | I2C_MCS_RUN);    // master enable
-  while(I2C1_MCS_R&I2C_MCS_BUSY){};// wait for transmission done
-                                          // check error bits
-  if((I2C1_MCS_R&(I2C_MCS_DATACK|I2C_MCS_ADRACK|I2C_MCS_ERROR)) != 0){
-    I2C1_MCS_R = (0                // send stop if nonzero
-//                       & ~I2C_MCS_ACK     // no data ack (no data on send)
-                       | I2C_MCS_STOP     // stop
-//                       & ~I2C_MCS_START   // no start/restart
-//                       & ~I2C_MCS_RUN   // master disable
-                        );
-                                          // return error bits if nonzero
-    return (I2C1_MCS_R&(I2C_MCS_DATACK|I2C_MCS_ADRACK|I2C_MCS_ERROR));
-  }
-  I2C1_MDR_R = data3&0xFF;         // prepare third byte
-  I2C1_MCS_R = (0
-//                       & ~I2C_MCS_ACK     // no data ack (no data on send)
-                       | I2C_MCS_STOP     // generate stop
-//                       & ~I2C_MCS_START   // no start/restart
-                       | I2C_MCS_RUN);    // master enable
-  while(I2C1_MCS_R&I2C_MCS_BUSY){};// wait for transmission done
-                                          // return error bits
-  return (I2C1_MCS_R&(I2C_MCS_DATACK|I2C_MCS_ADRACK|I2C_MCS_ERROR));
-}
-#endif
 
 static void prvTask_producer(void * pvParameters)
 {
@@ -875,6 +167,309 @@ static void prvTask_consumer(void * pvParameters)
     }
 }
 
+uint8_t pca9685_servo_init(pca9685_address_t addr, pca9685_channel_t channel, uint32_t times)
+{
+    uint8_t res;
+    //uint8_t reg;
+    //uint16_t on_count, off_count;
+    //uint32_t i;
+    pca9685_info_t info;
+    
+    /* link interface function */
+    DRIVER_PCA9685_LINK_INIT(&gs_handle, pca9685_handle_t);
+    DRIVER_PCA9685_LINK_IIC_INIT(&gs_handle, pca9685_interface_iic_init);
+    DRIVER_PCA9685_LINK_IIC_DEINIT(&gs_handle, pca9685_interface_iic_deinit);
+    DRIVER_PCA9685_LINK_IIC_READ(&gs_handle, pca9685_interface_iic_read);
+    DRIVER_PCA9685_LINK_IIC_WEITE(&gs_handle, pca9685_interface_iic_write);
+    DRIVER_PCA9685_LINK_OE_GPIO_INIT(&gs_handle, pca9685_interface_oe_init);
+    DRIVER_PCA9685_LINK_OE_GPIO_DEINIT(&gs_handle, pca9685_interface_oe_deinit);
+    DRIVER_PCA9685_LINK_OE_GPIO_WRITE(&gs_handle, pca9685_interface_oe_write);
+    DRIVER_PCA9685_LINK_DELAY_MS(&gs_handle, pca9685_interface_delay_ms);
+    DRIVER_PCA9685_LINK_DEBUG_PRINT(&gs_handle, pca9685_interface_debug_print);
+    
+    /* get information */
+    res = pca9685_info(&info);
+    if (res != 0)
+    {
+        pca9685_interface_debug_print("pca9685: get info failed.\n");
+        
+        return 1;
+    }
+    else
+    {
+        /* print chip info */
+        pca9685_interface_debug_print("pca9685: chip is %s.\n", info.chip_name);
+        pca9685_interface_debug_print("pca9685: manufacturer is %s.\n", info.manufacturer_name);
+        pca9685_interface_debug_print("pca9685: interface is %s.\n", info.interface);
+        pca9685_interface_debug_print("pca9685: driver version is %d.%d.\n", info.driver_version / 1000, (info.driver_version % 1000) / 100);
+        pca9685_interface_debug_print("pca9685: min supply voltage is %d V.\n", info.supply_voltage_min_v);
+        pca9685_interface_debug_print("pca9685: max supply voltage is %d V.\n", info.supply_voltage_max_v);
+        pca9685_interface_debug_print("pca9685: max current is %d mA.\n", info.max_current_ma);
+        pca9685_interface_debug_print("pca9685: max temperature is %d C.\n", info.temperature_max);
+        pca9685_interface_debug_print("pca9685: min temperature is %d C.\n", info.temperature_min);
+    }
+    
+    /* start write test */
+    pca9685_interface_debug_print("pca9685: start write test.\n");
+    
+    /* set addr pin */
+    res = pca9685_set_addr_pin(&gs_handle, addr);
+    if (res != 0)
+    {
+        pca9685_interface_debug_print("pca9685: set addr pin failed.\n");
+        
+        return 1;
+    }
+    
+    /* pca9685 init */
+    res = pca9685_init(&gs_handle);
+    if (res != 0)
+    {
+        pca9685_interface_debug_print("pca9685: init failed.\n");
+        
+        return 1;
+    }
+    
+    /* inactive */
+    res = pca9685_set_active(&gs_handle, PCA9685_BOOL_FALSE);
+    if (res != 0)
+    {
+        pca9685_interface_debug_print("pca9685: set active failed.\n");
+        (void)pca9685_deinit(&gs_handle);
+        
+        return 1;
+    }
+    
+    /* set sleep mode */
+    res = pca9685_set_sleep_mode(&gs_handle, PCA9685_BOOL_TRUE);
+    if (res != 0)
+    {
+        pca9685_interface_debug_print("pca9685: set sleep mode failed.\n");
+        (void)pca9685_deinit(&gs_handle);
+        
+        return 1;
+    }
+    
+    /* set 50Hz */
+    //res = pca9685_output_frequency_convert_to_register(&gs_handle, PCA9685_OSCILLATOR_INTERNAL_FREQUENCY, 50, (uint8_t *)&reg);
+    //if (res != 0)
+    //{
+    //    pca9685_interface_debug_print("pca9685: output frequency convert to register failed.\n");
+    //    (void)pca9685_deinit(&gs_handle);
+    //    
+    //    return 1;
+    //}
+    
+    /* set pre scale */
+    //res = pca9685_set_prescaler(&gs_handle, reg);
+    //if (res != 0)
+    //{
+    //    pca9685_interface_debug_print("pca9685: set pre scale failed.\n");
+    //    (void)pca9685_deinit(&gs_handle);
+    //    
+    //    return 1;
+    //}
+    
+    /* disable external clock pin */
+    //res = pca9685_set_external_clock_pin(&gs_handle, PCA9685_BOOL_FALSE);
+    //if (res != 0)
+    //{
+    //    pca9685_interface_debug_print("pca9685: set external clock pin failed.\n");
+    //    (void)pca9685_deinit(&gs_handle);
+    //    
+    //    return 1;
+    //}
+    
+    /* enable auto increment */
+    /*res = pca9685_set_register_auto_increment(&gs_handle, PCA9685_BOOL_TRUE);
+    if (res != 0)
+    {
+        pca9685_interface_debug_print("pca9685: set register auto increment failed.\n");
+        (void)pca9685_deinit(&gs_handle);
+        
+        return 1;
+    }*/
+    
+    /* disable respond sub address 1 */
+    /*res = pca9685_set_respond_subaddress_1(&gs_handle, PCA9685_BOOL_FALSE);
+    if (res != 0)
+    {
+        pca9685_interface_debug_print("pca9685: set respond sub address 1 failed.\n");
+        (void)pca9685_deinit(&gs_handle);
+        
+        return 1;
+    }*/
+    
+    /* disable respond sub address 2 */
+    /*res = pca9685_set_respond_subaddress_2(&gs_handle, PCA9685_BOOL_FALSE);
+    if (res != 0)
+    {
+        pca9685_interface_debug_print("pca9685: set respond sub address 2 failed.\n");
+        (void)pca9685_deinit(&gs_handle);
+        
+        return 1;
+    }*/
+    
+    /* disable respond sub address 3 */
+    /*res = pca9685_set_respond_subaddress_3(&gs_handle, PCA9685_BOOL_FALSE);
+    if (res != 0)
+    {
+        pca9685_interface_debug_print("pca9685: set respond sub address 3 failed.\n");
+        (void)pca9685_deinit(&gs_handle);
+        
+        return 1;
+    }*/
+    
+    /* disable respond all call */
+    /*res = pca9685_set_respond_all_call(&gs_handle, PCA9685_BOOL_FALSE);
+    if (res != 0)
+    {
+        pca9685_interface_debug_print("pca9685: set respond all call failed.\n");
+        (void)pca9685_deinit(&gs_handle);
+        
+        return 1;
+    }*/
+    
+    /* disable output invert */
+    /*res = pca9685_set_output_invert(&gs_handle, PCA9685_BOOL_FALSE);
+    if (res != 0)
+    {
+        pca9685_interface_debug_print("pca9685: set output invert failed.\n");
+        (void)pca9685_deinit(&gs_handle);
+        
+        return 1;
+    }*/
+    
+    /* stop output change */
+    /*res = pca9685_set_output_change(&gs_handle, PCA9685_OUTPUT_CHANGE_STOP);
+    if (res != 0)
+    {
+        pca9685_interface_debug_print("pca9685: set output change failed.\n");
+        (void)pca9685_deinit(&gs_handle);
+        
+        return 1;
+    }*/
+    
+    /* totem pole driver */
+    /*res = pca9685_set_output_driver(&gs_handle, PCA9685_OUTPUT_DRIVER_TOTEM_POLE);
+    if (res != 0)
+    {
+        pca9685_interface_debug_print("pca9685: set output driver failed.\n");
+        (void)pca9685_deinit(&gs_handle);
+        
+        return 1;
+    }*/
+    
+    /* high impedance */
+    /*res = pca9685_set_output_disable_type(&gs_handle, PCA9685_OUTPUT_DISABLE_TYPE_HIGH_IMPEDANCE);
+    if (res != 0)
+    {
+        pca9685_interface_debug_print("pca9685: set output disable type failed.\n");
+        (void)pca9685_deinit(&gs_handle);
+        
+        return 1;
+    }*/
+    
+    /* set sleep mode */
+    /*res = pca9685_set_sleep_mode(&gs_handle, PCA9685_BOOL_FALSE);
+    if (res != 0)
+    {
+        pca9685_interface_debug_print("pca9685: set sleep mode failed.\n");
+        (void)pca9685_deinit(&gs_handle);
+        
+        return 1;
+    }*/
+    
+    /* active */
+    /*res = pca9685_set_active(&gs_handle, PCA9685_BOOL_TRUE);
+    if (res != 0)
+    {
+        pca9685_interface_debug_print("pca9685: set active failed.\n");
+        (void)pca9685_deinit(&gs_handle);
+        
+        return 1;
+    }*/
+        #if(0)
+    /* output */
+    for (i = 1; i < times + 1; i++)
+    {
+        /* convert data */
+        res = pca9685_pwm_convert_to_register(&gs_handle, 0.0f, 2.5f + (float)(i) / (float)(times) * 10.0f,
+                                              (uint16_t *)&on_count, (uint16_t *)&off_count);
+        if (res != 0)
+        {
+            pca9685_interface_debug_print("pca9685: convert to register failed.\n");
+            (void)pca9685_deinit(&gs_handle);
+            
+            return 1;
+        }
+        
+        /* write channel */
+        res = pca9685_write_channel(&gs_handle, channel, on_count, off_count);
+        if (res != 0)
+        {
+            pca9685_interface_debug_print("pca9685: write channel failed.\n");
+            (void)pca9685_deinit(&gs_handle);
+            
+            return 1;
+        }
+        
+        /* output data */
+        pca9685_interface_debug_print("pca9685: set channel %d %0.2f degrees.\n", channel, (float)(i) / (float)(times) * 180.0f);
+        
+        /* delay 1000 ms */
+        pca9685_interface_delay_ms(1000);
+    }
+    
+    /* output */
+
+    for (i = 1; i < times + 1; i++)
+    {
+        /* convert data */
+        res = pca9685_pwm_convert_to_register(&gs_handle, 0.0f, 2.5f + (float)(i) / (float)(times) * 10.0f,
+                                              (uint16_t *)&on_count, (uint16_t *)&off_count);
+        if (res != 0)
+        {
+            pca9685_interface_debug_print("pca9685: convert to register failed.\n");
+            (void)pca9685_deinit(&gs_handle);
+            
+            return 1;
+        }
+        
+        /* write all channel */
+        res = pca9685_write_all_channel(&gs_handle, on_count, off_count);
+        if (res != 0)
+        {
+            pca9685_interface_debug_print("pca9685: write all channel failed.\n");
+            (void)pca9685_deinit(&gs_handle);
+            
+            return 1;
+        }
+        
+        /* output data */
+        pca9685_interface_debug_print("pca9685: set all channel %0.2f degrees.\n", (float)(i) / (float)(times) * 180.0f);
+        
+        /* delay 1000 ms */
+        pca9685_interface_delay_ms(1000);
+    }
+    
+    /* inactive */
+    res = pca9685_set_active(&gs_handle, PCA9685_BOOL_FALSE);
+    if (res != 0)
+    {
+        pca9685_interface_debug_print("pca9685: set active failed.\n");
+        (void)pca9685_deinit(&gs_handle);
+        
+        return 1;
+    }
+    
+    /* finish write test */
+    pca9685_interface_debug_print("pca9685: finish write test.\n");
+    (void)pca9685_deinit(&gs_handle);
+    #endif
+    return 0;
+}
+
 int main(void){
   //BSP_init();
   //DisableInterrupts();
@@ -898,7 +493,10 @@ int main(void){
   //putsUart0("Initiating LEDs Done.......\r\n");
   //BSP_RGB_onboard_Init(1, 1, 1);
   //putsUart0("Initiating LEDs Done.......\r\n");
-  BSP_i2c1_init();
+  //BSP_i2c1_init();
+  pca9685_interface_iic_init();
+  pca9685_servo_init(PCA9685_ADDRESS_A000001,  PCA9685_CHANNEL_5, 5);
+  //pca9685_servo_init();
   putsUart0("Initiating I2C Done.......\r\n");
   BSP_LCD_Init();
   putsUart0("Initiating LCD Done.......\r\n");
