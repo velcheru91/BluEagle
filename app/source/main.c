@@ -130,7 +130,7 @@ static void prvTask_producer(void * pvParameters)
     for( ; ; )
     {
         //vTaskDelayUntil( &xNextWakeTime, xBlockTime );
-        putsUart0( "Sending value \r\n");
+        //putsUart0( "Sending value \r\n");
         //BSP_RGB_D_Toggle(0,1,1);
         BSP_Joystick_Input(&x_val, &y_val, &select_val);
         xQueueSend( xQueue, &x_val, 0U );
@@ -151,14 +151,14 @@ static void prvTask_consumer(void * pvParameters)
         // xQueueReceive( xQueue, &ulReceivedValue, portMAX_DELAY );
         xQueueReceive( xQueue, &x_val, portMAX_DELAY );
         xQueueReceive( yQueue, &y_val, portMAX_DELAY );
-        putsUart0( "Received value \r\n");
+        //putsUart0( "Received value \r\n");
         itoa((int32_t)(x_val), x_buffer, 10);
         itoa((int32_t)(y_val), y_buffer, 10);
-        putsUart0( "X value: ");
-        putsUart0(x_buffer);
-        putsUart0( " Y value: ");
-        putsUart0(y_buffer);
-        putsUart0( "\r\n");
+        //putsUart0( "X value: ");
+        //putsUart0(x_buffer);
+        //putsUart0( " Y value: ");
+        //putsUart0(y_buffer);
+        //putsUart0( "\r\n");
         BSP_LCD_SetCursor(5, 3);
         BSP_LCD_OutUDec4((uint32_t)x_val, BSP_LCD_Color565(255, 255, 255));
         BSP_LCD_SetCursor(5, 4);
@@ -192,32 +192,32 @@ uint8_t pca9685_servo_init(pca9685_address_t addr, pca9685_channel_t channel, ui
     res = pca9685_info(&info);
     if (res != 0)
     {
-        pca9685_interface_debug_print("pca9685: get info failed.\n");
+        pca9685_interface_debug_print("pca9685: get info failed.\r\n");
         
         return 1;
     }
     else
     {
         /* print chip info */
-        pca9685_interface_debug_print("pca9685: chip is %s.\n", info.chip_name);
-        pca9685_interface_debug_print("pca9685: manufacturer is %s.\n", info.manufacturer_name);
-        pca9685_interface_debug_print("pca9685: interface is %s.\n", info.interface);
-        pca9685_interface_debug_print("pca9685: driver version is %d.%d.\n", info.driver_version / 1000, (info.driver_version % 1000) / 100);
-        pca9685_interface_debug_print("pca9685: min supply voltage is %d V.\n", info.supply_voltage_min_v);
-        pca9685_interface_debug_print("pca9685: max supply voltage is %d V.\n", info.supply_voltage_max_v);
-        pca9685_interface_debug_print("pca9685: max current is %d mA.\n", info.max_current_ma);
-        pca9685_interface_debug_print("pca9685: max temperature is %d C.\n", info.temperature_max);
-        pca9685_interface_debug_print("pca9685: min temperature is %d C.\n", info.temperature_min);
+        pca9685_interface_debug_print("pca9685: chip is %s.\r\n", info.chip_name);
+        pca9685_interface_debug_print("pca9685: manufacturer is %s.\r\n", info.manufacturer_name);
+        pca9685_interface_debug_print("pca9685: interface is %s.\r\n", info.interface);
+        pca9685_interface_debug_print("pca9685: driver version is %d.%d.\r\n", info.driver_version / 1000, (info.driver_version % 1000) / 100);
+        pca9685_interface_debug_print("pca9685: min supply voltage is %d V.\r\n", info.supply_voltage_min_v);
+        pca9685_interface_debug_print("pca9685: max supply voltage is %d V.\r\n", info.supply_voltage_max_v);
+        pca9685_interface_debug_print("pca9685: max current is %d mA.\r\n", info.max_current_ma);
+        pca9685_interface_debug_print("pca9685: max temperature is %d C.\r\n", info.temperature_max);
+        pca9685_interface_debug_print("pca9685: min temperature is %d C.\r\n", info.temperature_min);
     }
     
     /* start write test */
-    pca9685_interface_debug_print("pca9685: start write test.\n");
+    pca9685_interface_debug_print("pca9685: start write test.\r\n");
     
     /* set addr pin */
     res = pca9685_set_addr_pin(&gs_handle, addr);
     if (res != 0)
     {
-        pca9685_interface_debug_print("pca9685: set addr pin failed.\n");
+        pca9685_interface_debug_print("pca9685: set addr pin failed.\r\n");
         
         return 1;
     }
@@ -226,7 +226,7 @@ uint8_t pca9685_servo_init(pca9685_address_t addr, pca9685_channel_t channel, ui
     res = pca9685_init(&gs_handle);
     if (res != 0)
     {
-        pca9685_interface_debug_print("pca9685: init failed.\n");
+        pca9685_interface_debug_print("pca9685: init failed.\r\n");
         
         return 1;
     }
@@ -235,7 +235,7 @@ uint8_t pca9685_servo_init(pca9685_address_t addr, pca9685_channel_t channel, ui
     res = pca9685_set_active(&gs_handle, PCA9685_BOOL_FALSE);
     if (res != 0)
     {
-        pca9685_interface_debug_print("pca9685: set active failed.\n");
+        pca9685_interface_debug_print("pca9685: set active failed.\r\n");
         (void)pca9685_deinit(&gs_handle);
         
         return 1;
@@ -245,7 +245,7 @@ uint8_t pca9685_servo_init(pca9685_address_t addr, pca9685_channel_t channel, ui
     res = pca9685_set_sleep_mode(&gs_handle, PCA9685_BOOL_TRUE);
     if (res != 0)
     {
-        pca9685_interface_debug_print("pca9685: set sleep mode failed.\n");
+        pca9685_interface_debug_print("pca9685: set sleep mode failed.\r\n");
         (void)pca9685_deinit(&gs_handle);
         
         return 1;
@@ -547,6 +547,7 @@ int main(void){
           mainTASK_B_PRIORITY, /* The priority assigned to the task. */
           NULL );                          /* The task handle is not required, so NULL is passed. */    
 
+  putsUart0("Starting Scheduler.......\r\n");
   /* Start the FreeRTOS scheduler */
   vTaskStartScheduler();
   
