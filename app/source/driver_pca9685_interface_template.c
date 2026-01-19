@@ -149,5 +149,6 @@ void pca9685_interface_delay_ms(uint32_t ms)
  */
 void pca9685_interface_debug_print(const char *const fmt, ...)
 {
-    putsUart0((char *)fmt);
+    printfUart0((char *)fmt);
+    //putsUart0((char *)fmt);
 }

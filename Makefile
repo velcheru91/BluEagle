@@ -53,7 +53,7 @@ OFLAG = -o
 INCLUDEFLAG = -I
 CPUFLAG = -mthumb -mcpu=cortex-m4
 WFLAG = -Wall -Wextra -Werror -Wno-unused-parameter
-FPUFLAG=-mfpu=fpv4-sp-d16 -mfloat-abi=softfp
+FPUFLAG=-mfpu=fpv4-sp-d16 -mfloat-abi=hard -mgeneral-regs-only
 #-specs=rdimon.specs
 #CFLAGS =-ffunction-sections       \
     -fdata-sections           \
@@ -62,7 +62,7 @@ FPUFLAG=-mfpu=fpv4-sp-d16 -mfloat-abi=softfp
 
 CFLAGS = $(CPUFLAG) $(WFLAG) -Dgcc
 # Uncomment this if the application performs floating point operations
-#CFLAGS += $(FPUFLAG)
+CFLAGS += $(FPUFLAG)
 
 # Additional C compiler flags to produce debugging symbols
 DEB_FLAG = -g -DDEBUG

@@ -168,6 +168,7 @@ int8_t BSP_SysCtl_mcuRev(void)
     }
     return sysctl_mcu_revision;
 }
+
 // ------------BSP_Clock_InitFastest------------
 // Configure the system clock to run at the fastest
 // and most accurate settings.  For example, if the
@@ -622,6 +623,142 @@ void putsUart0(char* str)
     for (unsigned int i = 0; i < strlen(str); i++)
 	  putcUart0(str[i]);
 }
+
+// Helper function to convert integer to string
+static void itoa_uart(int32_t num, char* buffer, int32_t size)
+{
+    if (size <= 0) return;
+    
+    int32_t i = 0;
+    int32_t is_negative = 0;
+    
+    if (num < 0) {
+        is_negative = 1;
+        num = -num;
+    }
+    
+    // Handle zero case
+    if (num == 0) {
+        if (size > 1) {
+            buffer[0] = '0';
+            buffer[1] = '\0';
+        } else {
+            buffer[0] = '\0';
+        }
+        return;
+    }
+    
+    // Convert number to string (reversed)
+    while (num > 0 && i < size - 1) {
+        buffer[i++] = '0' + (num % 10);
+        num /= 10;
+    }
+    
+    // Add negative sign if needed
+    if (is_negative && i < size - 1) {
+        buffer[i++] = '-';
+    }
+    
+    buffer[i] = '\0';
+    
+    // Reverse the string
+    int32_t start = 0, end = i - 1;
+    while (start < end) {
+        char temp = buffer[start];
+        buffer[start] = buffer[end];
+        buffer[end] = temp;
+        start++;
+        end--;
+    }
+}
+
+// Helper function to convert float to string (limited precision)
+// Note: Float support is limited due to -mgeneral-regs-only compiler flag
+static void ftoa_uart(int32_t int_part, int32_t frac_part, char* buffer, int32_t size, int32_t precision)
+{
+    if (size <= 0 || precision < 0 || precision > 6) return;
+    
+    // Convert integer part
+    char temp[16];
+    itoa_uart(int_part, temp, sizeof(temp));
+    int32_t len = strlen(temp);
+    
+    if (len >= size) {
+        buffer[0] = '\0';
+        return;
+    }
+    
+    // Copy integer part
+    strcpy(buffer, temp);
+    int32_t pos = len;
+    
+    // Add decimal point if precision > 0
+    if (precision > 0 && pos < size - 1) {
+        buffer[pos++] = '.';
+        
+        // Convert fractional part (frac_part is already 0-999)
+        for (int32_t i = 0; i < precision && pos < size - 1; i++) {
+            frac_part *= 10;
+            int32_t digit = (frac_part / 1000);
+            buffer[pos++] = '0' + digit;
+            frac_part = (frac_part % 1000);
+        }
+    }
+    
+    buffer[pos] = '\0';
+}
+
+// Printf-style function for UART0
+// Supports %d (int), %f (int and frac parts), %s (string), and %% (literal %)
+#include <stdarg.h>
+void printfUart0(const char* format, ...)
+{
+    va_list args;
+    va_start(args, format);
+    
+    int32_t i = 0;
+    
+    while (format[i] != '\0') {
+        if (format[i] == '%' && format[i+1] != '\0') {
+            i++;
+            switch (format[i]) {
+                case 'd': {
+                    int32_t val = va_arg(args, int32_t);
+                    char num_str[32];
+                    itoa_uart(val, num_str, sizeof(num_str));
+                    putsUart0(num_str);
+                    break;
+                }
+                case 'f': {
+                    int32_t int_part = va_arg(args, int32_t);
+                    int32_t frac_part = va_arg(args, int32_t);
+                    char num_str[32];
+                    ftoa_uart(int_part, frac_part, num_str, sizeof(num_str), 2);
+                    putsUart0(num_str);
+                    break;
+                }
+                case 's': {
+                    char* str = va_arg(args, char*);
+                    if (str) putsUart0(str);
+                    break;
+                }
+                case '%': {
+                    putcUart0('%');
+                    break;
+                }
+                default:
+                    putcUart0(format[i]);
+                    break;
+            }
+        } else {
+            putcUart0(format[i]);
+        }
+        i++;
+    }
+    
+    va_end(args);
+}
+
 void Uart0Isr()
 {
 	char c = UART0_DR_R;

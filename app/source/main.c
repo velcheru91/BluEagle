@@ -101,6 +101,7 @@
 #include <inc/hw_memmap.h>
 #include "driver_pca9685.h"
 #include "driver_pca9685_interface.h"
+#include "fpu.h"
 
 //#include "wdtask.h"
 #define mainTASK_A_PRIORITY                 (tskIDLE_PRIORITY + 1)
@@ -475,6 +476,7 @@ int main(void){
   //DisableInterrupts();
   IntMasterDisable();
   BSP_SysCtl_mcuRev();
+  fpu_enable();
   //BSP_Clock_InitFastest();
   BSP_Clock_Init_50Mz();
   SysTick_Init();               // initialize SysTick timer

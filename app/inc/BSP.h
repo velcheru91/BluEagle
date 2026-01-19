@@ -815,6 +815,9 @@ void putcUart0(char c);
 // Blocking function that writes a string when the UART buffer is not full
 void putsUart0(char* str);
 
+// Printf-style function for UART0 supporting %d (int), %f (float), %s (string), and %% (percent)
+void printfUart0(const char* format, ...);
+
 void Uart0Isr();
 
 //static void BSP_i2cinit(void);
