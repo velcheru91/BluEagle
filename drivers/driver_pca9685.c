@@ -1678,7 +1678,7 @@ uint8_t pca9685_get_prescaler(pca9685_handle_t *handle, uint8_t *prescaler)
  *             - 3 handle is not initialized
  * @note       none
  */
-#if(0)
+
 uint8_t pca9685_output_frequency_convert_to_register(pca9685_handle_t *handle, uint32_t oscillator, uint16_t output_freq, uint8_t *reg)
 {
     if (handle == NULL)                                                                      /* check handle */
@@ -1694,7 +1694,7 @@ uint8_t pca9685_output_frequency_convert_to_register(pca9685_handle_t *handle, u
 
     return 0;                                                                                /* success return 0 */
 }
-#endif
+
 /**
  * @brief      convert the register raw data to the output frequency
  * @param[in]  *handle pointer to a pca9685 handle structure
@@ -1707,7 +1707,7 @@ uint8_t pca9685_output_frequency_convert_to_register(pca9685_handle_t *handle, u
  *             - 3 handle is not initialized
  * @note       none
  */
-#if(0)
+
 uint8_t pca9685_output_frequency_convert_to_data(pca9685_handle_t *handle, uint32_t oscillator, uint8_t reg, uint16_t *output_freq)
 {
     if (handle == NULL)                                                                 /* check handle */
@@ -1723,7 +1723,7 @@ uint8_t pca9685_output_frequency_convert_to_data(pca9685_handle_t *handle, uint3
 
     return 0;                                                                           /* success return 0 */
 }
-#endif
+
 /**
  * @brief      convert the pwm to the register raw data
  * @param[in]  *handle pointer to a pca9685 handle structure
@@ -1740,7 +1740,7 @@ uint8_t pca9685_output_frequency_convert_to_data(pca9685_handle_t *handle, uint3
  *             0.0 <= delay_percent <= 100.0
  *             0.0 <= high_duty_cycle_percent <= 100.0
  */
-#if (0)
+
 uint8_t pca9685_pwm_convert_to_register(pca9685_handle_t *handle, float delay_percent, float high_duty_cycle_percent,
                                         uint16_t *on_count, uint16_t *off_count)
 {
@@ -1764,7 +1764,7 @@ uint8_t pca9685_pwm_convert_to_register(pca9685_handle_t *handle, float delay_pe
 
     return 0;                                                                                                  /* success return 0 */
 }
-#endif
+
 /**
  * @brief      convert the register raw data to the pwm
  * @param[in]  *handle pointer to a pca9685 handle structure
@@ -1779,7 +1779,6 @@ uint8_t pca9685_pwm_convert_to_register(pca9685_handle_t *handle, float delay_pe
  *             - 4 on_count or off_count is over 4096
  * @note       on_count <= 4096 && off_count <= 4096
  */
-#if(0)
 uint8_t pca9685_pwm_convert_to_data(pca9685_handle_t *handle, uint16_t on_count, uint16_t off_count,
                                     float *delay_percent, float *high_duty_cycle_percent)
 {
@@ -1803,7 +1802,7 @@ uint8_t pca9685_pwm_convert_to_data(pca9685_handle_t *handle, uint16_t on_count,
 
     return 0;                                                                           /* success return 0 */
 }
-#endif
+
 /**
  * @brief     initialize the chip
  * @param[in] *handle pointer to a pca9685 handle structure

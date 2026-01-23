@@ -52,8 +52,8 @@ CFLAG = -c -O0 -g3
 OFLAG = -o
 INCLUDEFLAG = -I
 CPUFLAG = -mthumb -mcpu=cortex-m4
-WFLAG = -Wall -Wextra -Werror -Wno-unused-parameter
-FPUFLAG=-mfpu=fpv4-sp-d16 -mfloat-abi=hard -mgeneral-regs-only
+WFLAG = -Wall -Wextra -Werror -Wno-unused-parameter -Wno-attributes
+FPUFLAG=-mfpu=fpv4-sp-d16 -mfloat-abi=soft
 #-specs=rdimon.specs
 #CFLAGS =-ffunction-sections       \
     -fdata-sections           \
@@ -160,7 +160,7 @@ $(BINDIR):
 	mkdir -p $@
 
 $(ELF_IMAGE) : $(OBJS) $(LINKER_SCRIPT)
-	$(LD) -nostdlib -L $(OBJDIR) -T $(LINKER_SCRIPT) $(OBJS) $(OFLAG) $(BINDIR)$@
+	$(CC) -nostdlib -L $(OBJDIR) -T $(LINKER_SCRIPT) $(OBJS) -lm -lgcc $(OFLAG) $(BINDIR)$@
 
 debug : _debug_flags all
 

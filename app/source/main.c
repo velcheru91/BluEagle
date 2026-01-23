@@ -171,9 +171,9 @@ static void prvTask_consumer(void * pvParameters)
 uint8_t pca9685_servo_init(pca9685_address_t addr, pca9685_channel_t channel, uint32_t times)
 {
     uint8_t res;
-    //uint8_t reg;
-    //uint16_t on_count, off_count;
-    //uint32_t i;
+    uint8_t reg;
+    uint16_t on_count, off_count;
+    uint32_t i;
     pca9685_info_t info;
     
     /* link interface function */
@@ -192,32 +192,32 @@ uint8_t pca9685_servo_init(pca9685_address_t addr, pca9685_channel_t channel, ui
     res = pca9685_info(&info);
     if (res != 0)
     {
-        pca9685_interface_debug_print("pca9685: get info failed.\r\n");
+        pca9685_interface_debug_print("pca9685: get info failed.\n");
         
         return 1;
     }
     else
     {
         /* print chip info */
-        pca9685_interface_debug_print("pca9685: chip is %s.\r\n", info.chip_name);
-        pca9685_interface_debug_print("pca9685: manufacturer is %s.\r\n", info.manufacturer_name);
-        pca9685_interface_debug_print("pca9685: interface is %s.\r\n", info.interface);
-        pca9685_interface_debug_print("pca9685: driver version is %d.%d.\r\n", info.driver_version / 1000, (info.driver_version % 1000) / 100);
-        pca9685_interface_debug_print("pca9685: min supply voltage is %d V.\r\n", info.supply_voltage_min_v);
-        pca9685_interface_debug_print("pca9685: max supply voltage is %d V.\r\n", info.supply_voltage_max_v);
-        pca9685_interface_debug_print("pca9685: max current is %d mA.\r\n", info.max_current_ma);
-        pca9685_interface_debug_print("pca9685: max temperature is %d C.\r\n", info.temperature_max);
-        pca9685_interface_debug_print("pca9685: min temperature is %d C.\r\n", info.temperature_min);
+        pca9685_interface_debug_print("pca9685: chip is %s.\n", info.chip_name);
+        pca9685_interface_debug_print("pca9685: manufacturer is %s.\n", info.manufacturer_name);
+        pca9685_interface_debug_print("pca9685: interface is %s.\n", info.interface);
+        pca9685_interface_debug_print("pca9685: driver version is %d.%d.\n", info.driver_version / 1000, (info.driver_version % 1000) / 100);
+        pca9685_interface_debug_print("pca9685: min supply voltage is %0.1fV.\n", info.supply_voltage_min_v);
+        pca9685_interface_debug_print("pca9685: max supply voltage is %0.1fV.\n", info.supply_voltage_max_v);
+        pca9685_interface_debug_print("pca9685: max current is %0.2fmA.\n", info.max_current_ma);
+        pca9685_interface_debug_print("pca9685: max temperature is %0.1fC.\n", info.temperature_max);
+        pca9685_interface_debug_print("pca9685: min temperature is %0.1fC.\n", info.temperature_min);
     }
     
     /* start write test */
-    pca9685_interface_debug_print("pca9685: start write test.\r\n");
+    pca9685_interface_debug_print("pca9685: start write test.\n");
     
     /* set addr pin */
     res = pca9685_set_addr_pin(&gs_handle, addr);
     if (res != 0)
     {
-        pca9685_interface_debug_print("pca9685: set addr pin failed.\r\n");
+        pca9685_interface_debug_print("pca9685: set addr pin failed.\n");
         
         return 1;
     }
@@ -226,7 +226,7 @@ uint8_t pca9685_servo_init(pca9685_address_t addr, pca9685_channel_t channel, ui
     res = pca9685_init(&gs_handle);
     if (res != 0)
     {
-        pca9685_interface_debug_print("pca9685: init failed.\r\n");
+        pca9685_interface_debug_print("pca9685: init failed.\n");
         
         return 1;
     }
@@ -235,7 +235,7 @@ uint8_t pca9685_servo_init(pca9685_address_t addr, pca9685_channel_t channel, ui
     res = pca9685_set_active(&gs_handle, PCA9685_BOOL_FALSE);
     if (res != 0)
     {
-        pca9685_interface_debug_print("pca9685: set active failed.\r\n");
+        pca9685_interface_debug_print("pca9685: set active failed.\n");
         (void)pca9685_deinit(&gs_handle);
         
         return 1;
@@ -245,152 +245,152 @@ uint8_t pca9685_servo_init(pca9685_address_t addr, pca9685_channel_t channel, ui
     res = pca9685_set_sleep_mode(&gs_handle, PCA9685_BOOL_TRUE);
     if (res != 0)
     {
-        pca9685_interface_debug_print("pca9685: set sleep mode failed.\r\n");
+        pca9685_interface_debug_print("pca9685: set sleep mode failed.\n");
         (void)pca9685_deinit(&gs_handle);
         
         return 1;
     }
     
     /* set 50Hz */
-    //res = pca9685_output_frequency_convert_to_register(&gs_handle, PCA9685_OSCILLATOR_INTERNAL_FREQUENCY, 50, (uint8_t *)&reg);
-    //if (res != 0)
-    //{
-    //    pca9685_interface_debug_print("pca9685: output frequency convert to register failed.\n");
-    //    (void)pca9685_deinit(&gs_handle);
-    //    
-    //    return 1;
-    //}
+    res = pca9685_output_frequency_convert_to_register(&gs_handle, PCA9685_OSCILLATOR_INTERNAL_FREQUENCY, 50, (uint8_t *)&reg);
+    if (res != 0)
+    {
+        pca9685_interface_debug_print("pca9685: output frequency convert to register failed.\n");
+        (void)pca9685_deinit(&gs_handle);
+        
+        return 1;
+    }
     
     /* set pre scale */
-    //res = pca9685_set_prescaler(&gs_handle, reg);
-    //if (res != 0)
-    //{
-    //    pca9685_interface_debug_print("pca9685: set pre scale failed.\n");
-    //    (void)pca9685_deinit(&gs_handle);
-    //    
-    //    return 1;
-    //}
+    res = pca9685_set_prescaler(&gs_handle, reg);
+    if (res != 0)
+    {
+        pca9685_interface_debug_print("pca9685: set pre scale failed.\n");
+        (void)pca9685_deinit(&gs_handle);
+        
+        return 1;
+    }
     
     /* disable external clock pin */
-    //res = pca9685_set_external_clock_pin(&gs_handle, PCA9685_BOOL_FALSE);
-    //if (res != 0)
-    //{
-    //    pca9685_interface_debug_print("pca9685: set external clock pin failed.\n");
-    //    (void)pca9685_deinit(&gs_handle);
-    //    
-    //    return 1;
-    //}
+    res = pca9685_set_external_clock_pin(&gs_handle, PCA9685_BOOL_FALSE);
+    if (res != 0)
+    {
+        pca9685_interface_debug_print("pca9685: set external clock pin failed.\n");
+        (void)pca9685_deinit(&gs_handle);
+        
+        return 1;
+    }
     
     /* enable auto increment */
-    /*res = pca9685_set_register_auto_increment(&gs_handle, PCA9685_BOOL_TRUE);
+    res = pca9685_set_register_auto_increment(&gs_handle, PCA9685_BOOL_TRUE);
     if (res != 0)
     {
         pca9685_interface_debug_print("pca9685: set register auto increment failed.\n");
         (void)pca9685_deinit(&gs_handle);
         
         return 1;
-    }*/
+    }
     
     /* disable respond sub address 1 */
-    /*res = pca9685_set_respond_subaddress_1(&gs_handle, PCA9685_BOOL_FALSE);
+    res = pca9685_set_respond_subaddress_1(&gs_handle, PCA9685_BOOL_FALSE);
     if (res != 0)
     {
         pca9685_interface_debug_print("pca9685: set respond sub address 1 failed.\n");
         (void)pca9685_deinit(&gs_handle);
         
         return 1;
-    }*/
+    }
     
     /* disable respond sub address 2 */
-    /*res = pca9685_set_respond_subaddress_2(&gs_handle, PCA9685_BOOL_FALSE);
+    res = pca9685_set_respond_subaddress_2(&gs_handle, PCA9685_BOOL_FALSE);
     if (res != 0)
     {
         pca9685_interface_debug_print("pca9685: set respond sub address 2 failed.\n");
         (void)pca9685_deinit(&gs_handle);
         
         return 1;
-    }*/
+    }
     
     /* disable respond sub address 3 */
-    /*res = pca9685_set_respond_subaddress_3(&gs_handle, PCA9685_BOOL_FALSE);
+    res = pca9685_set_respond_subaddress_3(&gs_handle, PCA9685_BOOL_FALSE);
     if (res != 0)
     {
         pca9685_interface_debug_print("pca9685: set respond sub address 3 failed.\n");
         (void)pca9685_deinit(&gs_handle);
         
         return 1;
-    }*/
+    }
     
     /* disable respond all call */
-    /*res = pca9685_set_respond_all_call(&gs_handle, PCA9685_BOOL_FALSE);
+    res = pca9685_set_respond_all_call(&gs_handle, PCA9685_BOOL_FALSE);
     if (res != 0)
     {
         pca9685_interface_debug_print("pca9685: set respond all call failed.\n");
         (void)pca9685_deinit(&gs_handle);
         
         return 1;
-    }*/
+    }
     
     /* disable output invert */
-    /*res = pca9685_set_output_invert(&gs_handle, PCA9685_BOOL_FALSE);
+    res = pca9685_set_output_invert(&gs_handle, PCA9685_BOOL_FALSE);
     if (res != 0)
     {
         pca9685_interface_debug_print("pca9685: set output invert failed.\n");
         (void)pca9685_deinit(&gs_handle);
         
         return 1;
-    }*/
+    }
     
     /* stop output change */
-    /*res = pca9685_set_output_change(&gs_handle, PCA9685_OUTPUT_CHANGE_STOP);
+    res = pca9685_set_output_change(&gs_handle, PCA9685_OUTPUT_CHANGE_STOP);
     if (res != 0)
     {
         pca9685_interface_debug_print("pca9685: set output change failed.\n");
         (void)pca9685_deinit(&gs_handle);
         
         return 1;
-    }*/
+    }
     
     /* totem pole driver */
-    /*res = pca9685_set_output_driver(&gs_handle, PCA9685_OUTPUT_DRIVER_TOTEM_POLE);
+    res = pca9685_set_output_driver(&gs_handle, PCA9685_OUTPUT_DRIVER_TOTEM_POLE);
     if (res != 0)
     {
         pca9685_interface_debug_print("pca9685: set output driver failed.\n");
         (void)pca9685_deinit(&gs_handle);
         
         return 1;
-    }*/
+    }
     
     /* high impedance */
-    /*res = pca9685_set_output_disable_type(&gs_handle, PCA9685_OUTPUT_DISABLE_TYPE_HIGH_IMPEDANCE);
+    res = pca9685_set_output_disable_type(&gs_handle, PCA9685_OUTPUT_DISABLE_TYPE_HIGH_IMPEDANCE);
     if (res != 0)
     {
         pca9685_interface_debug_print("pca9685: set output disable type failed.\n");
         (void)pca9685_deinit(&gs_handle);
         
         return 1;
-    }*/
+    }
     
     /* set sleep mode */
-    /*res = pca9685_set_sleep_mode(&gs_handle, PCA9685_BOOL_FALSE);
+    res = pca9685_set_sleep_mode(&gs_handle, PCA9685_BOOL_FALSE);
     if (res != 0)
     {
         pca9685_interface_debug_print("pca9685: set sleep mode failed.\n");
         (void)pca9685_deinit(&gs_handle);
         
         return 1;
-    }*/
+    }
     
     /* active */
-    /*res = pca9685_set_active(&gs_handle, PCA9685_BOOL_TRUE);
+    res = pca9685_set_active(&gs_handle, PCA9685_BOOL_TRUE);
     if (res != 0)
     {
         pca9685_interface_debug_print("pca9685: set active failed.\n");
         (void)pca9685_deinit(&gs_handle);
         
         return 1;
-    }*/
-        #if(0)
+    }
+    
     /* output */
     for (i = 1; i < times + 1; i++)
     {
@@ -423,7 +423,6 @@ uint8_t pca9685_servo_init(pca9685_address_t addr, pca9685_channel_t channel, ui
     }
     
     /* output */
-
     for (i = 1; i < times + 1; i++)
     {
         /* convert data */
@@ -467,7 +466,7 @@ uint8_t pca9685_servo_init(pca9685_address_t addr, pca9685_channel_t channel, ui
     /* finish write test */
     pca9685_interface_debug_print("pca9685: finish write test.\n");
     (void)pca9685_deinit(&gs_handle);
-    #endif
+    
     return 0;
 }
 
@@ -497,7 +496,10 @@ int main(void){
   //putsUart0("Initiating LEDs Done.......\r\n");
   //BSP_i2c1_init();
   pca9685_interface_iic_init();
-  pca9685_servo_init(PCA9685_ADDRESS_A000001,  PCA9685_CHANNEL_5, 5);
+  //pca9685_servo_init(PCA9685_ADDRESS_A000001,  PCA9685_CHANNEL_3, 5);
+  //pca9685_servo_init(PCA9685_ADDRESS_A000001,  PCA9685_CHANNEL_7, 5);
+  //pca9685_servo_init(PCA9685_ADDRESS_A000001,  PCA9685_CHANNEL_11, 5);
+  //pca9685_servo_init(PCA9685_ADDRESS_A000001,  PCA9685_CHANNEL_15, 5);
   //pca9685_servo_init();
   putsUart0("Initiating I2C Done.......\r\n");
   BSP_LCD_Init();
