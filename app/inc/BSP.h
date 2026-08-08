@@ -177,6 +177,10 @@
 #define LCD_YELLOW     0xFFE0   // 255, 255,   0
 #define LCD_WHITE      0xFFFF   // 255, 255, 255
 #define LCD_GREY       0x8410   // 128, 128, 128
+
+#define BUTTON1   (*((volatile uint32_t *)0x40007100))  /* PD6 */
+#define BUTTON2   (*((volatile uint32_t *)0x40007200))  /* PD7 */
+
 void DisableInterrupts(void);
 void EnableInterrupts(void);
 int8_t BSP_SysCtl_mcuRev(void);
@@ -819,6 +823,12 @@ void putsUart0(char* str);
 void printfUart0(const char* format, ...);
 
 void Uart0Isr();
+
+void BSP_UART1_Init();
+
+void putcUart1(char c);
+
+void putsUart1(char* str);
 
 //static void BSP_i2cinit(void);
 void BSP_i2c1_init(void);
